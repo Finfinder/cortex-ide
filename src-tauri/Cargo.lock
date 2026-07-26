@@ -549,6 +549,7 @@ name = "cortex-ide"
 version = "0.0.1"
 dependencies = [
  "dirs 5.0.1",
+ "libc",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
