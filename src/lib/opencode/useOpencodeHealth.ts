@@ -93,11 +93,12 @@ export function useOpencodeHealth(
 
   // Health check function
   const checkNow = useCallback(async () => {
-    if (!clientRef.current) return;
+    const client = clientRef.current;
+    if (!client) return;
 
     setIsChecking(true);
     try {
-      const response = await clientRef.current.health();
+      const response = await client.health();
       if (response.ok) {
         setHealth({
           status: 'healthy',
@@ -128,16 +129,18 @@ export function useOpencodeHealth(
         setIsChecking(false);
       }
     }
-  }, [baseUrl]);
+  }, []);
 
   // Periodic health check
   useEffect(() => {
-    // Initial check
-    checkNow();
+    // Initial check — deferred to avoid synchronous setState within the effect
+    // body (react-hooks/set-state-in-effect). checkNow itself is async.
+    const initial = setTimeout(checkNow, 0);
 
     intervalRef.current = setInterval(checkNow, healthIntervalMs);
 
     return () => {
+      clearTimeout(initial);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;

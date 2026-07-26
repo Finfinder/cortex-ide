@@ -38,7 +38,7 @@ describe('OpencodeClient', () => {
     it('should create a session successfully', async () => {
       const mockResult = { id: 'session-1' };
 
-      global.fetch = vi.fn().mockResolvedValue({
+      globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
         json: () => Promise.resolve(mockResult),
@@ -46,7 +46,7 @@ describe('OpencodeClient', () => {
 
       const result = await client.createSession();
       expect(result.id).toBe('session-1');
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         'http://127.0.0.1:4096/session',
         expect.objectContaining({
           method: 'POST',
@@ -58,7 +58,7 @@ describe('OpencodeClient', () => {
     });
 
     it('should throw OpencodeClientError on failure', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
+      globalThis.fetch = vi.fn().mockResolvedValue({
         ok: false,
         status: 500,
         statusText: 'Internal Server Error',
@@ -76,7 +76,7 @@ describe('OpencodeClient', () => {
         { id: 's2', title: 'Session 2', createdAt: 2, updatedAt: 2 },
       ];
 
-      global.fetch = vi.fn().mockResolvedValue({
+      globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
         json: () => Promise.resolve(mockSessions),
@@ -100,7 +100,7 @@ describe('OpencodeClient', () => {
         parts: [{ id: 'p1', messageID: 'msg-1', sessionID: 'session-1', text: 'Hello!', type: 'text' }],
       };
 
-      global.fetch = vi.fn().mockResolvedValue({
+      globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
         json: () => Promise.resolve(mockResponse),
@@ -111,7 +111,7 @@ describe('OpencodeClient', () => {
       });
 
       expect(response.info.role).toBe('assistant');
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         'http://127.0.0.1:4096/session/session-1/message',
         expect.objectContaining({
           method: 'POST',
@@ -123,7 +123,7 @@ describe('OpencodeClient', () => {
 
   describe('health', () => {
     it('should return health status', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
+      globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
       });
@@ -135,7 +135,7 @@ describe('OpencodeClient', () => {
 
   describe('deleteSession', () => {
     it('should delete a session', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
+      globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
         json: () => Promise.resolve(true),
@@ -143,7 +143,7 @@ describe('OpencodeClient', () => {
 
       const result = await client.deleteSession('session-1');
       expect(result).toBe(true);
-      expect(global.fetch).toHaveBeenCalledWith(
+      expect(globalThis.fetch).toHaveBeenCalledWith(
         'http://127.0.0.1:4096/session/session-1',
         expect.objectContaining({ method: 'DELETE' }),
       );
@@ -152,7 +152,7 @@ describe('OpencodeClient', () => {
 
   describe('abortSession', () => {
     it('should abort a session', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
+      globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
         json: () => Promise.resolve(true),
@@ -167,7 +167,7 @@ describe('OpencodeClient', () => {
     it('should throw on timeout', async () => {
       vi.useFakeTimers();
 
-      global.fetch = vi.fn().mockImplementation(
+      globalThis.fetch = vi.fn().mockImplementation(
         () =>
           new Promise((_, reject) => {
             setTimeout(() => reject(new DOMException('Aborted', 'AbortError')), 100);

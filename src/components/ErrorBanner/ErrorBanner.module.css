@@ -1,0 +1,30 @@
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 12px;
+  background: var(--diff-remove-bg);
+  border-bottom: 1px solid var(--diff-remove-fg);
+  color: var(--diff-remove-fg);
+  font-size: 12px;
+}
+
+.text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.retry {
+  background: transparent;
+  border: 1px solid var(--diff-remove-fg);
+  border-radius: 4px;
+  color: var(--diff-remove-fg);
+  font-size: 11px;
+  padding: 2px 10px;
+}
+
+.retry:hover {
+  background: rgba(243, 139, 168, 0.15);
+}

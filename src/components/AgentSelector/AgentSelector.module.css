@@ -1,0 +1,110 @@
+.container {
+  position: relative;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.trigger:hover {
+  border-color: var(--accent);
+}
+
+.triggerLabel {
+  font-family: var(--font-mono);
+}
+
+.dropdown {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 320px;
+  max-height: 360px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.search {
+  margin: 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 5px 8px;
+  outline: none;
+}
+
+.search:focus {
+  border-color: var(--accent);
+}
+
+.list {
+  list-style: none;
+  overflow-y: auto;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.option:hover {
+  background: rgba(127, 127, 127, 0.1);
+}
+
+.selected {
+  background: rgba(127, 127, 127, 0.16);
+}
+
+.optionName {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.optionModel {
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.optionDesc {
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.empty {
+  padding: 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.description {
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
