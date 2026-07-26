@@ -246,13 +246,6 @@ export interface EventFileEdited extends OpencodeEvent {
   properties: { file: string };
 }
 
-// ─── Health ─────────────────────────────────────────────────────────────────
-
-export interface HealthResponse {
-  status: string;
-  version?: string;
-}
-
 // ─── Spawn (Tauri IPC) ──────────────────────────────────────────────────────
 
 export interface SpawnHandle {
