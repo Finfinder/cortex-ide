@@ -1,0 +1,86 @@
+{
+  "$schema": "./opencode-config.schema.json",
+  "version": "1.0.0",
+  "opencode": {
+    "binary": {
+      "detected": "C:\\nvm4w\\nodejs\\opencode.cmd",
+      "version": "1.18.5",
+      "installMethod": "npm global (opencode-ai)"
+    },
+    "server": {
+      "port": 4096,
+      "hostname": "127.0.0.1",
+      "cors": [],
+      "mdns": false,
+      "healthCheckIntervalMs": 5000,
+      "healthCheckTimeoutMs": 3000,
+      "maxHealthFailures": 3
+    },
+    "sse": {
+      "reconnectDelayMs": 3000,
+      "maxReconnectAttempts": 10
+    }
+  },
+  "models": {
+    "default": {
+      "model": "opencode/north-mini-code-free",
+      "provider": "opencode",
+      "smallModel": "opencode/north-mini-code-free",
+      "smallModelProvider": "opencode",
+      "maxTokens": 8192,
+      "temperature": 0.7
+    },
+    "available": [
+      { "model": "opencode/big-pickle", "provider": "opencode", "free": true },
+      { "model": "opencode/deepseek-v4-flash-free", "provider": "opencode", "free": true },
+      { "model": "opencode/laguna-s-2.1-free", "provider": "opencode", "free": true },
+      { "model": "opencode/ling-3.0-flash-free", "provider": "opencode", "free": true },
+      { "model": "opencode/mimo-v2.5-free", "provider": "opencode", "free": true },
+      { "model": "opencode/nemotron-3-ultra-free", "provider": "opencode", "free": true },
+      { "model": "opencode/north-mini-code-free", "provider": "opencode", "free": true }
+    ]
+  },
+  "agents": {
+    "architect": {
+      "enabled": true,
+      "model": "opencode/big-pickle",
+      "smallModel": "opencode/north-mini-code-free",
+      "systemPrompt": "You are a software architect. Focus on system design, patterns, and trade-offs.",
+      "tools": { "search": true, "edit": false, "shell": false, "git": false, "web": true, "lsp": true }
+    },
+    "code-reviewer": {
+      "enabled": true,
+      "model": "opencode/big-pickle",
+      "smallModel": "opencode/north-mini-code-free",
+      "systemPrompt": "You are a code reviewer. Focus on code quality, best practices, and potential issues.",
+      "tools": { "search": true, "edit": false, "shell": false, "git": true, "web": false, "lsp": true }
+    },
+    "test-writer": {
+      "enabled": true,
+      "model": "opencode/north-mini-code-free",
+      "smallModel": "opencode/north-mini-code-free",
+      "systemPrompt": "You are a test engineer. Write comprehensive tests with good coverage.",
+      "tools": { "search": true, "edit": true, "shell": true, "git": false, "web": false, "lsp": true }
+    },
+    "debugger": {
+      "enabled": true,
+      "model": "opencode/big-pickle",
+      "smallModel": "opencode/north-mini-code-free",
+      "systemPrompt": "You are a debugging specialist. Analyze errors, trace issues, and suggest fixes.",
+      "tools": { "search": true, "edit": true, "shell": true, "git": true, "web": true, "lsp": true }
+    },
+    "general-assistant": {
+      "enabled": true,
+      "model": "opencode/north-mini-code-free",
+      "smallModel": "opencode/north-mini-code-free",
+      "systemPrompt": "You are a helpful coding assistant. Help with any programming task.",
+      "tools": { "search": true, "edit": true, "shell": true, "git": true, "web": true, "lsp": true }
+    }
+  },
+  "compaction": {
+    "mode": "auto",
+    "maxMessages": 50,
+    "reservedMessages": 10,
+    "reservedTokens": 4096
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Finfinder/cortex-ide/opencode-config.schema.json",
+  "title": "Cortex IDE - OpenCode Integration Configuration",
+  "description": "Configuration schema for OpenCode integration with Cortex IDE",
+  "type": "object",
+  "required": ["version", "opencode", "models", "agents", "compaction"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "Configuration version (semver)"
+    },
+    "opencode": {
+      "type": "object",
+      "required": ["binary", "server", "sse"],
+      "properties": {
+        "binary": {
+          "type": "object",
+          "required": ["detected", "version", "installMethod"],
+          "properties": {
+            "detected": { "type": "string", "description": "Detected binary path" },
+            "version": { "type": "string", "description": "OpenCode version" },
+            "installMethod": { "type": "string", "description": "How OpenCode was installed" }
+          }
+        },
+        "server": {
+          "type": "object",
+          "required": ["port", "hostname"],
+          "properties": {
+            "port": { "type": "integer", "minimum": 1024, "maximum": 65535, "default": 4096 },
+            "hostname": { "type": "string", "default": "127.0.0.1" },
+            "cors": { "type": "array", "items": { "type": "string" } },
+            "mdns": { "type": "boolean", "default": false },
+            "healthCheckIntervalMs": { "type": "integer", "minimum": 1000, "default": 5000 },
+            "healthCheckTimeoutMs": { "type": "integer", "minimum": 500, "default": 3000 },
+            "maxHealthFailures": { "type": "integer", "minimum": 1, "default": 3 }
+          }
+        },
+        "sse": {
+          "type": "object",
+          "properties": {
+            "reconnectDelayMs": { "type": "integer", "minimum": 500, "default": 3000 },
+            "maxReconnectAttempts": { "type": "integer", "minimum": 1, "default": 10 }
+          }
+        }
+      }
+    },
+    "models": {
+      "type": "object",
+      "required": ["default", "available"],
+      "properties": {
+        "default": {
+          "type": "object",
+          "required": ["model", "provider"],
+          "properties": {
+            "model": { "type": "string" },
+            "provider": { "type": "string" },
+            "smallModel": { "type": "string" },
+            "smallModelProvider": { "type": "string" },
+            "maxTokens": { "type": "integer", "minimum": 1 },
+            "temperature": { "type": "number", "minimum": 0, "maximum": 2 }
+          }
+        },
+        "available": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["model", "provider"],
+            "properties": {
+              "model": { "type": "string" },
+              "provider": { "type": "string" },
+              "free": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "agents": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["enabled"],
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "model": { "type": "string" },
+          "smallModel": { "type": "string" },
+          "systemPrompt": { "type": "string" },
+          "tools": {
+            "type": "object",
+            "properties": {
+              "search": { "type": "boolean" },
+              "edit": { "type": "boolean" },
+              "shell": { "type": "boolean" },
+              "git": { "type": "boolean" },
+              "web": { "type": "boolean" },
+              "lsp": { "type": "boolean" }
+            }
+          }
+        }
+      }
+    },
+    "compaction": {
+      "type": "object",
+      "required": ["mode"],
+      "properties": {
+        "mode": { "type": "string", "enum": ["auto", "prune", "reserved"] },
+        "maxMessages": { "type": "integer", "minimum": 1 },
+        "reservedMessages": { "type": "integer", "minimum": 1 },
+        "reservedTokens": { "type": "integer", "minimum": 256 }
+      }
+    }
+  }
+}
