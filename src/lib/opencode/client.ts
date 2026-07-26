@@ -7,10 +7,9 @@ import type {
   SessionListResponse,
   SessionDeleteResponse,
   SessionAbortResponse,
-  AssistantMessage,
+  ChatResponse,
   ChatMessage,
-  Message,
-  HealthResponse,
+  MessageListResponse,
 } from './types';
 
 /** Configuration for the OpenCode HTTP client. */
@@ -60,15 +59,14 @@ export class OpencodeClient {
 
   // ─── Session Endpoints ──────────────────────────────────────────────────
 
-  /** Create a new session. */
-  async createSession(): Promise<Session> {
-    return this.post<Session>('/session');
+  /** Create a new session. Returns just the session id. */
+  async createSession(): Promise<{ id: string }> {
+    return this.post<{ id: string }>('/session');
   }
 
   /** List all sessions. */
   async listSessions(): Promise<Session[]> {
-    const response = await this.get<SessionListResponse>('/session');
-    return response.sessions;
+    return this.get<SessionListResponse>('/session');
   }
 
   /** Get a specific session by ID. */
@@ -76,31 +74,38 @@ export class OpencodeClient {
     return this.get<Session>(`/session/${id}`);
   }
 
-  /** Delete a session. */
-  async deleteSession(id: string): Promise<SessionDeleteResponse> {
+  /** Delete a session. Returns true on success. */
+  async deleteSession(id: string): Promise<boolean> {
     return this.delete<SessionDeleteResponse>(`/session/${id}`);
   }
 
-  /** Abort an ongoing operation in a session. */
-  async abortSession(id: string): Promise<SessionAbortResponse> {
+  /** Abort an ongoing operation in a session. Returns true on success. */
+  async abortSession(id: string): Promise<boolean> {
     return this.post<SessionAbortResponse>(`/session/${id}/abort`);
   }
 
   /** Get messages for a session. */
-  async getMessages(id: string): Promise<Message[]> {
-    return this.get<Message[]>(`/session/${id}/message`);
+  async getMessages(id: string): Promise<MessageListResponse> {
+    return this.get<MessageListResponse>(`/session/${id}/message`);
   }
 
   /** Send a chat message to a session. */
-  async chat(id: string, message: ChatMessage): Promise<AssistantMessage> {
-    return this.post<AssistantMessage>(`/session/${id}/message`, message);
+  async chat(id: string, message: ChatMessage): Promise<ChatResponse> {
+    return this.post<ChatResponse>(`/session/${id}/message`, message);
   }
 
   // ─── Health ─────────────────────────────────────────────────────────────
 
-  /** Check server health. */
-  async health(): Promise<HealthResponse> {
-    return this.get<HealthResponse>('/health');
+  /** Check server health. The /health endpoint returns HTML, so we just check if the server responds. */
+  async health(): Promise<{ ok: boolean }> {
+    try {
+      const response = await fetch(`${this.baseUrl}/health`, {
+        signal: this.signal,
+      });
+      return { ok: response.ok };
+    } catch {
+      return { ok: false };
+    }
   }
 
   // ─── Event Stream URL ───────────────────────────────────────────────────

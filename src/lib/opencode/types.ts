@@ -5,38 +5,58 @@
 
 export interface Session {
   id: string;
+  slug?: string;
+  projectID?: string;
+  directory?: string;
+  path?: string;
   title?: string;
-  createdAt: number;
-  updatedAt: number;
-  modelID?: string;
-  providerID?: string;
+  agent?: string;
+  model?: { id: string; providerID: string; variant?: string };
+  cost: number;
+  tokens: { input: number; output: number; reasoning: number; cache: { read: number; write: number } };
+  summary?: { additions: number; deletions: number; files: number };
+  version?: string;
+  time: { created: number; updated: number };
 }
 
-export interface SessionListResponse {
-  sessions: Session[];
-}
+/** GET /session returns Session[] directly (not wrapped in an object) */
+export type SessionListResponse = Session[];
 
-export interface SessionDeleteResponse {
-  id: string;
-}
+/** DELETE /session/:id returns boolean true */
+export type SessionDeleteResponse = boolean;
 
-export interface SessionAbortResponse {
-  id: string;
-}
+/** POST /session/:id/abort returns boolean true */
+export type SessionAbortResponse = boolean;
 
 // ─── Message ────────────────────────────────────────────────────────────────
 
-export interface Message {
+export interface MessageInfo {
   id: string;
   sessionID: string;
+  parentID?: string;
   role: 'user' | 'assistant' | 'system';
-  parts: Part[];
-  createdAt: number;
+  mode?: string;
+  agent?: string;
+  path?: { cwd: string; root: string };
+  cost: number;
+  tokens: { total: number; input: number; output: number; reasoning: number; cache: { read: number; write: number } };
+  modelID?: string;
+  providerID?: string;
+  finish?: string;
+  time: { created: number; completed?: number };
 }
 
-export interface AssistantMessage extends Message {
-  role: 'assistant';
+/** A message envelope as returned by the API: { info, parts } */
+export interface MessageEnvelope {
+  info: MessageInfo;
+  parts: Part[];
 }
+
+/** GET /session/:id/message returns MessageEnvelope[] */
+export type MessageListResponse = MessageEnvelope[];
+
+/** POST /session/:id/message returns MessageEnvelope */
+export type ChatResponse = MessageEnvelope;
 
 export interface ChatMessage {
   modelID?: string;

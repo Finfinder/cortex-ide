@@ -277,17 +277,23 @@ function parseSseEvent(block: string): OpencodeEvent | null {
     }
   }
 
-  if (!eventType || !data) {
+  if (!data) {
     return null;
   }
 
   try {
     const parsed = JSON.parse(data);
+    // OpenCode embeds the event type in the JSON payload as "type".
+    // Fall back to the SSE "event:" header if present, then the JSON "type".
+    const type = eventType ?? parsed.type;
+    if (!type) {
+      return null;
+    }
     // OpenCode wraps event-specific data in a "properties" key.
     // Unwrap it so the event shape is { type, properties: <actual data> }.
     const properties = parsed.properties ?? parsed;
     return {
-      type: eventType as EventType,
+      type: type as EventType,
       properties,
     };
   } catch {

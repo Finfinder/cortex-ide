@@ -36,21 +36,16 @@ describe('OpencodeClient', () => {
 
   describe('createSession', () => {
     it('should create a session successfully', async () => {
-      const mockSession = {
-        id: 'session-1',
-        title: 'Test Session',
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
+      const mockResult = { id: 'session-1' };
 
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        json: () => Promise.resolve(mockSession),
+        json: () => Promise.resolve(mockResult),
       });
 
-      const session = await client.createSession();
-      expect(session.id).toBe('session-1');
+      const result = await client.createSession();
+      expect(result.id).toBe('session-1');
       expect(global.fetch).toHaveBeenCalledWith(
         'http://127.0.0.1:4096/session',
         expect.objectContaining({
@@ -76,17 +71,15 @@ describe('OpencodeClient', () => {
 
   describe('listSessions', () => {
     it('should return sessions array', async () => {
-      const mockResponse = {
-        sessions: [
-          { id: 's1', title: 'Session 1', createdAt: 1, updatedAt: 1 },
-          { id: 's2', title: 'Session 2', createdAt: 2, updatedAt: 2 },
-        ],
-      };
+      const mockSessions = [
+        { id: 's1', title: 'Session 1', createdAt: 1, updatedAt: 1 },
+        { id: 's2', title: 'Session 2', createdAt: 2, updatedAt: 2 },
+      ];
 
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        json: () => Promise.resolve(mockResponse),
+        json: () => Promise.resolve(mockSessions),
       });
 
       const sessions = await client.listSessions();
@@ -98,11 +91,13 @@ describe('OpencodeClient', () => {
   describe('chat', () => {
     it('should send a chat message and return assistant response', async () => {
       const mockResponse = {
-        id: 'msg-1',
-        sessionID: 'session-1',
-        role: 'assistant',
+        info: {
+          id: 'msg-1',
+          sessionID: 'session-1',
+          role: 'assistant',
+          time: Date.now(),
+        },
         parts: [{ id: 'p1', messageID: 'msg-1', sessionID: 'session-1', text: 'Hello!', type: 'text' }],
-        createdAt: Date.now(),
       };
 
       global.fetch = vi.fn().mockResolvedValue({
@@ -115,7 +110,7 @@ describe('OpencodeClient', () => {
         parts: [{ type: 'text', text: 'Hi' }],
       });
 
-      expect(response.role).toBe('assistant');
+      expect(response.info.role).toBe('assistant');
       expect(global.fetch).toHaveBeenCalledWith(
         'http://127.0.0.1:4096/session/session-1/message',
         expect.objectContaining({
@@ -131,12 +126,10 @@ describe('OpencodeClient', () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ status: 'ok', version: '1.18.5' }),
       });
 
       const health = await client.health();
-      expect(health.status).toBe('ok');
-      expect(health.version).toBe('1.18.5');
+      expect(health.ok).toBe(true);
     });
   });
 
@@ -145,11 +138,11 @@ describe('OpencodeClient', () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ id: 'session-1' }),
+        json: () => Promise.resolve(true),
       });
 
       const result = await client.deleteSession('session-1');
-      expect(result.id).toBe('session-1');
+      expect(result).toBe(true);
       expect(global.fetch).toHaveBeenCalledWith(
         'http://127.0.0.1:4096/session/session-1',
         expect.objectContaining({ method: 'DELETE' }),
@@ -162,11 +155,11 @@ describe('OpencodeClient', () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ id: 'session-1' }),
+        json: () => Promise.resolve(true),
       });
 
       const result = await client.abortSession('session-1');
-      expect(result.id).toBe('session-1');
+      expect(result).toBe(true);
     });
   });
 
@@ -184,7 +177,7 @@ describe('OpencodeClient', () => {
       const promise = new OpencodeClient({
         baseUrl: 'http://127.0.0.1:4096',
         timeout: 50,
-      }).health();
+      }).listSessions();
 
       vi.advanceTimersByTime(100);
       await expect(promise).rejects.toThrow(OpencodeClientError);

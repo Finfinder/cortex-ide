@@ -137,4 +137,38 @@ describe('parseSseBuffer', () => {
     expect(result.events).toHaveLength(1);
     expect(result.events[0].type).toBe('permission.updated');
   });
+
+  it('should parse events with type in JSON payload (real OpenCode format)', () => {
+    const buffer =
+      'data: {"id":"evt_abc123","type":"server.connected","properties":{}}\n\n';
+
+    const result = parseSseBuffer(buffer);
+
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0].type).toBe('server.connected');
+    expect(result.events[0].properties).toEqual({});
+  });
+
+  it('should parse multiple data-only events with type in JSON', () => {
+    const buffer =
+      'data: {"id":"evt_1","type":"server.connected","properties":{}}\n\n' +
+      'data: {"id":"evt_2","type":"session.idle","properties":{"sessionID":"s1"}}\n\n';
+
+    const result = parseSseBuffer(buffer);
+
+    expect(result.events).toHaveLength(2);
+    expect(result.events[0].type).toBe('server.connected');
+    expect(result.events[1].type).toBe('session.idle');
+    expect(result.events[1].properties).toEqual({ sessionID: 's1' });
+  });
+
+  it('should prefer event: header over JSON type when both present', () => {
+    const buffer =
+      'event: custom.event\ndata: {"id":"evt_1","type":"server.connected","properties":{}}\n\n';
+
+    const result = parseSseBuffer(buffer);
+
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0].type).toBe('custom.event');
+  });
 });
