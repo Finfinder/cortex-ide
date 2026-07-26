@@ -112,31 +112,24 @@ impl ManagedProcess {
         if let Some(mut child) = self.child.take() {
             #[cfg(unix)]
             {
-                use tokio::signal::unix::{signal, SignalKind};
-                if let Ok(mut term) = signal(SignalKind::terminate()) {
-                    // Try graceful shutdown first
-                    if let Some(pid) = self.pid {
-                        unsafe {
-            // Send SIGTERM to the child process group
-            libc::kill(-(pid as i32), libc::SIGTERM);
-                        }
+                // Send SIGTERM directly to the child process
+                if let Some(pid) = self.pid {
+                    unsafe {
+                        libc::kill(pid as i32, libc::SIGTERM);
                     }
-                    // Wait up to 5 seconds for graceful exit
-                    let timeout = tokio::time::timeout(
-                        Duration::from_secs(5),
-                        child.wait(),
-                    );
-                    match timeout.await {
-                        Ok(Ok(_)) => return Ok(()),
-                        _ => {
-                            // Force kill
-                            let _ = child.kill().await;
-                            let _ = child.wait().await;
-                        }
+                }
+                // Wait up to 5 seconds for graceful exit
+                let timeout = tokio::time::timeout(
+                    Duration::from_secs(5),
+                    child.wait(),
+                );
+                match timeout.await {
+                    Ok(Ok(_)) => return Ok(()),
+                    _ => {
+                        // Force kill
+                        let _ = child.kill().await;
+                        let _ = child.wait().await;
                     }
-                } else {
-                    let _ = child.kill().await;
-                    let _ = child.wait().await;
                 }
             }
 
