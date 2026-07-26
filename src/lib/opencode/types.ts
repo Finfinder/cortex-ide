@@ -203,7 +203,7 @@ export interface OpencodeEvent {
 
 export interface EventMessageUpdated extends OpencodeEvent {
   type: 'message.updated';
-  properties: { info: Message };
+  properties: { info: MessageInfo };
 }
 
 export interface EventMessagePartUpdated extends OpencodeEvent {
