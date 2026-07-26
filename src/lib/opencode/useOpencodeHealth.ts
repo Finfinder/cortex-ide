@@ -84,6 +84,7 @@ export function useOpencodeHealth(
 
   // Initialize client
   useEffect(() => {
+    mountedRef.current = true;
     clientRef.current = new OpencodeClient({ baseUrl });
     return () => {
       mountedRef.current = false;
