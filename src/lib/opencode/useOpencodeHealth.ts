@@ -162,7 +162,7 @@ export function useOpencodeHealth(
         }
       },
       maxReconnectAttempts,
-      reconnectDelayMs,
+      reconnectDelay: reconnectDelayMs,
     });
 
     streamRef.current = stream;
