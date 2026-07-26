@@ -2,9 +2,12 @@
 //!
 //! Per-app spawn (NOT bundled sidecar). Manages:
 //! - Process start with configurable port/hostname/cors
-//! - Health check before signaling ready
 //! - Graceful stop (SIGTERM -> SIGKILL after 5s timeout)
-//! - Restart on crash with exponential backoff
+//! - Exponential backoff state for restart attempts
+//!
+//! NOTE: Health checking is handled separately by the `health` module.
+//! Automatic crash restart is not yet implemented — callers should use
+//! `is_alive()` + `restart_count()` to implement their own monitoring.
 
 use std::path::PathBuf;
 use std::process::Stdio;
