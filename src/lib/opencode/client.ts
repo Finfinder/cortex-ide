@@ -52,7 +52,11 @@ export class OpencodeClient {
 
   constructor(config: ClientConfig) {
     // Normalize base URL (remove trailing slash)
-    this.baseUrl = config.baseUrl.replace(/\/+$/, '');
+    let base = config.baseUrl;
+    while (base.endsWith('/')) {
+      base = base.slice(0, -1);
+    }
+    this.baseUrl = base;
     this.timeout = config.timeout ?? 30_000;
     this.signal = config.signal;
   }

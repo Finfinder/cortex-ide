@@ -142,6 +142,8 @@ export class OpencodeEventStream {
         // Intentional disconnect, don't reconnect
         return;
       }
+      // Log or handle connection error
+      console.debug('SSE connection error:', error);
 
       this.setStatus('error');
       this.scheduleReconnect();
@@ -184,6 +186,7 @@ export class OpencodeEventStream {
       }
     } catch (error) {
       if (!signal.aborted) {
+        console.debug('SSE read error:', error);
         this.setStatus('error');
         this.scheduleReconnect();
       }
