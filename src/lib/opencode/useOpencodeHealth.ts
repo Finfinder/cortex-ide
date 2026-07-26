@@ -97,14 +97,21 @@ export function useOpencodeHealth(
     setIsChecking(true);
     try {
       const response = await clientRef.current.health();
-      setHealth({
-        status: 'healthy',
-        consecutive_failures: 0,
-        needs_reconnect: false,
-      });
-      // Also check version if available
-      if (response.version) {
-        setHealth((prev) => ({ ...prev }));
+      if (response.ok) {
+        setHealth({
+          status: 'healthy',
+          consecutive_failures: 0,
+          needs_reconnect: false,
+        });
+      } else {
+        setHealth((prev) => {
+          const failures = prev.consecutive_failures + 1;
+          return {
+            status: failures >= 3 ? 'down' : 'unhealthy',
+            consecutive_failures: failures,
+            needs_reconnect: failures >= 3,
+          };
+        });
       }
     } catch {
       setHealth((prev) => {

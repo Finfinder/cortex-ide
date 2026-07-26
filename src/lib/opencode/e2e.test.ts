@@ -35,10 +35,11 @@ function detectBinary(): string | null {
     }
   }
 
-  // Try which/where
+  // Try which/where (cross-platform)
   try {
     const { execSync } = require('node:child_process');
-    const result = execSync('where opencode', { encoding: 'utf-8', timeout: 5000 }).trim();
+    const cmd = process.platform === 'win32' ? 'where opencode' : 'which opencode';
+    const result = execSync(cmd, { encoding: 'utf-8', timeout: 5000 }).trim();
     const lines = result.split('\n').filter((l: string) => l.trim());
     if (lines.length > 0) return lines[0].trim();
   } catch {
