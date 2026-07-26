@@ -1,0 +1,51 @@
+.container {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-secondary);
+}
+
+.output {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 12px;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--text-primary);
+}
+
+.add {
+  background: var(--diff-add-bg);
+  color: var(--diff-add-fg);
+}
+
+.remove {
+  background: var(--diff-remove-bg);
+  color: var(--diff-remove-fg);
+}
+
+.header {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.hunk {
+  color: var(--text-muted);
+}
+
+.context {
+  color: var(--text-secondary);
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-muted);
+  font-size: 14px;
+}
