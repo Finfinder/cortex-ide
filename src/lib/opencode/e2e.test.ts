@@ -21,8 +21,8 @@ function detectBinary(): string | null {
   const candidates = [
     process.env.OPENCODE_BINARY,
     'C:\\nvm4w\\nodejs\\opencode.cmd',
-    process.env.APPDATA + '\\npm\\opencode.cmd',
-    process.env.ProgramFiles + '\\nodejs\\opencode.cmd',
+    process.env.APPDATA && `${process.env.APPDATA}\\npm\\opencode.cmd`,
+    process.env.ProgramFiles && `${process.env.ProgramFiles}\\nodejs\\opencode.cmd`,
   ].filter(Boolean) as string[];
 
   for (const candidate of candidates) {
