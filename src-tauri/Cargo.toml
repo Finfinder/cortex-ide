@@ -23,6 +23,7 @@ tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio = { version = "1", features = ["process", "rt", "macros", "time", "sync", "io-util"] }
+libc = "0.2"
 which = "7"
 dirs = "5"
 thiserror = "2"
