@@ -1,0 +1,33 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 12px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.sse_connected {
+  color: var(--diff-add-fg);
+}
+
+.sse_connecting {
+  color: var(--accent);
+}
+
+.sse_disconnected {
+  color: var(--text-muted);
+}
+
+.sse_error {
+  color: var(--diff-remove-fg);
+}

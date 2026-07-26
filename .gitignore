@@ -37,4 +37,9 @@ src-tauri/gen
 Thumbs.db
 
 # GitHub (local issue tracking - not needed in repo)
-.github/
+.github
+
+test-results/
+playwright-report/
+.playwright-mcp/
+tsconfig.node.tsbuildinfo

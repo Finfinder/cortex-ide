@@ -19,6 +19,7 @@ export default [
       },
       globals: {
         ...globals.browser,
+        ...globals.node,
         ...globals.vitest,
       },
     },
@@ -38,6 +39,6 @@ export default [
   },
   prettier,
   {
-    ignores: ["dist/**", "node_modules/**", "src-tauri/**"],
+    ignores: ["dist/**", "node_modules/**", "src-tauri/**", "playwright-report/**", "test-results/**"],
   },
 ];

@@ -5,7 +5,7 @@
 // @vitest-environment node
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { spawn, type ChildProcess } from 'node:child_process';
+import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { OpencodeClient } from './client';
 import { OpencodeEventStream } from './sse';
 import type { OpencodeEvent } from './types';
@@ -27,7 +27,6 @@ function detectBinary(): string | null {
 
   for (const candidate of candidates) {
     try {
-      const { execSync } = require('node:child_process');
       execSync(`"${candidate}" --version`, { stdio: 'ignore', timeout: 5000 });
       return candidate;
     } catch {
@@ -37,7 +36,6 @@ function detectBinary(): string | null {
 
   // Try which/where (cross-platform)
   try {
-    const { execSync } = require('node:child_process');
     const cmd = process.platform === 'win32' ? 'where opencode' : 'which opencode';
     const result = execSync(cmd, { encoding: 'utf-8', timeout: 5000 }).trim();
     const lines = result.split('\n').filter((l: string) => l.trim());
@@ -342,7 +340,6 @@ describe('OpenCode E2E (Real Connection)', () => {
       // Check for expected event types
       const eventTypes = events.map((e) => e.type);
       const hasMessagePartUpdated = eventTypes.some((t) => t === 'message.part.updated');
-      const hasSessionIdle = eventTypes.some((t) => t === 'session.idle');
 
       // At minimum we should see message.part.updated events
       expect(hasMessagePartUpdated).toBe(true);
@@ -356,11 +353,9 @@ describe('OpenCode E2E (Real Connection)', () => {
       const stream = new OpencodeEventStream({
         url: `${BASE_URL}/event`,
         onEvent: (event) => {
-          if (
-            event.type === 'message.part.updated' &&
-            event.properties?.part?.type === 'text'
-          ) {
-            textParts.push(event.properties.part);
+          const part = (event.properties as { part?: { type?: string } }).part;
+          if (event.type === 'message.part.updated' && part?.type === 'text') {
+            textParts.push(part);
           }
         },
         reconnectDelay: 1000,
