@@ -194,7 +194,8 @@ export type EventType =
   | 'storage.write'
   | 'installation.updated'
   | 'lsp.client.diagnostics'
-  | 'ide.installed';
+  | 'ide.installed'
+  | (string & {}); // allow unknown events from future OpenCode versions
 
 export interface OpencodeEvent {
   type: EventType;
