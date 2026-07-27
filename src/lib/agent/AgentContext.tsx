@@ -22,7 +22,16 @@ import {
   type Part,
   type SseStatus,
 } from '@/lib/opencode';
+import { listen } from '@/lib/ipc';
 import type { UiMessage, PendingPatch } from './types';
+
+// ─── Debug logging (browser console) ──────────────────────────────────────
+
+function debugLog(...args: unknown[]) {
+  if (import.meta.env.DEV) {
+    console.log('[AgentContext]', ...args);
+  }
+}
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
@@ -143,23 +152,45 @@ function reducer(state: AgentState, action: Action): AgentState {
       return {
         ...state,
         messages: { ...state.messages, [action.sessionId]: next },
+        // Clear any stale error when messages are flowing
+        error: null,
         ...deriveSessionStats(next),
       };
     }
     case 'part.upsert': {
       const list = state.messages[action.sessionId] ?? [];
-      const next = list.map((m) => {
-        if (m.id !== action.messageId) return m;
+      const msgIdx = list.findIndex((m) => m.id === action.messageId);
+      // If the message doesn't exist yet (race condition: part.updated before message.updated),
+      // create a placeholder so the part can be attached
+      if (msgIdx < 0) {
+        const part = action.part;
+        const placeholder: UiMessage = {
+          id: action.messageId,
+          role: ((part as { role?: string }).role as UiMessage['role']) ?? 'assistant',
+          parts: [action.part],
+          streaming: true,
+          time: { created: Date.now() },
+        };
+        return {
+          ...state,
+          messages: { ...state.messages, [action.sessionId]: [...list, placeholder] },
+          error: null,
+          ...deriveSessionStats([...list, placeholder]),
+        };
+      }
+      const next = list.map((m, i) => {
+        if (i !== msgIdx) return m;
         const pIdx = m.parts.findIndex((p) => p.id === action.part.id);
         const parts =
           pIdx >= 0
-            ? m.parts.map((p, i) => (i === pIdx ? action.part : p))
+            ? m.parts.map((p, pi) => (pi === pIdx ? action.part : p))
             : [...m.parts, action.part];
         return { ...m, parts };
       });
       return {
         ...state,
         messages: { ...state.messages, [action.sessionId]: next },
+        error: null,
         ...deriveSessionStats(next),
       };
     }
@@ -186,8 +217,15 @@ function reducer(state: AgentState, action: Action): AgentState {
         ),
       };
     case 'sse.status':
+      debugLog('[Reducer] sse.status:', action.status, '(prev:', state.sseStatus, ')');
+      // Only update sseStatus — do NOT clear `error`. Explicit API errors
+      // (500, network failure) must persist until retry or a successful
+      // operation clears them. SSE reconnection is handled separately by
+      // `debouncedSseError` in ErrorBanner (debounced 4s), which clears
+      // automatically when sseStatus leaves 'error'.
       return { ...state, sseStatus: action.status };
     case 'error':
+      debugLog('[Reducer] error:', action.error, '(prev:', state.error, ')');
       return { ...state, error: action.error };
     case 'usage':
       return { ...state, tokens: action.tokens, cost: action.cost };
@@ -217,6 +255,8 @@ export interface AgentContextValue {
   client: OpencodeClient;
   /** Working directory of the OpenCode server. */
   cwd: string;
+  /** Whether the Tauri backend has emitted the ready event. */
+  backendReady: boolean;
   createSession: () => Promise<void>;
   selectSession: (id: string) => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
@@ -243,66 +283,173 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
   const clientRef = useRef(client);
   const streamRef = useRef<OpencodeEventStream | null>(null);
   const stateRef = useRef(state);
+  const [backendReady, setBackendReady] = useState(false);
 
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
 
+  // ─── Session operations ──────────────────────────────────────────────
+
+  const refreshSessions = useCallback(async () => {
+    try {
+      const sessions = await clientRef.current.listSessions();
+      dispatch({ type: 'sessions.loaded', sessions });
+      const current = stateRef.current;
+      if (!current.activeSessionId && sessions.length > 0) {
+        dispatch({ type: 'session.select', id: sessions[0].id });
+      }
+    } catch (e) {
+      console.trace('[AgentContext] refreshSessions error:', e);
+      dispatch({
+        type: 'error',
+        error: e instanceof Error ? e.message : 'Failed to load sessions',
+      });
+    }
+  }, []);
+
+  // ─── Wait for Tauri backend ready ────────────────────────────────────
+
+  useEffect(() => {
+    let cancelled = false;
+    let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    let unlistenReady: (() => void) | null = null;
+    let unlistenError: (() => void) | null = null;
+
+    const setup = async () => {
+      try {
+        // Listen for errors first
+        unlistenError = await listen<string>('backend://error', (msg) => {
+          if (!cancelled) {
+            console.trace('[AgentContext] backend://error event:', msg);
+            dispatch({ type: 'error', error: msg });
+          }
+        });
+
+        // Guard: unmount may have happened while awaiting the promise
+        if (cancelled) {
+          unlistenError();
+          unlistenError = null;
+          return;
+        }
+
+        // Then wait for ready
+        unlistenReady = await listen<undefined>('backend://ready', () => {
+          if (!cancelled) {
+            if (fallbackTimer) clearTimeout(fallbackTimer);
+            setBackendReady(true);
+            void refreshSessions();
+          }
+        });
+
+        // Guard: unmount may have happened while awaiting the promise
+        if (cancelled) {
+          unlistenReady();
+          unlistenReady = null;
+          return;
+        }
+
+        // Fallback: if the ready event was emitted before we registered the
+        // listener (race condition), auto-start after 30 seconds.
+        // The backend now waits for OpenCode to be healthy before emitting
+        // ready, which can take 10-15 seconds.
+        fallbackTimer = setTimeout(() => {
+          if (!cancelled) {
+            console.log('[AgentContext] backend://ready fallback timeout — starting anyway');
+            setBackendReady(true);
+            void refreshSessions();
+          }
+        }, 30000);
+      } catch {
+        // Not running inside Tauri — fall back to immediate start
+        if (!cancelled) {
+          setBackendReady(true);
+          void refreshSessions();
+        }
+      }
+    };
+
+    setup();
+
+    return () => {
+      cancelled = true;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      unlistenReady?.();
+      unlistenError?.();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ─── SSE event handling ──────────────────────────────────────────────
 
+  const handleMessageUpdated = useCallback((props: Record<string, unknown>) => {
+    const info = props.info as MessageEnvelope['info'];
+    const current = stateRef.current;
+    const existing = (current.messages[info.sessionID] ?? []).find(
+      (m) => m.id === info.id,
+    );
+    const preservedParts = existing?.parts && existing.parts.length > 0
+      ? existing.parts
+      : [];
+    const infoParts = (info as { parts?: Part[] }).parts;
+    const finalParts = infoParts && infoParts.length > 0 ? infoParts : preservedParts;
+    const message: UiMessage = {
+      id: info.id,
+      role: info.role,
+      parts: finalParts,
+      streaming: info.time.completed == null && info.role === 'assistant',
+      time: info.time,
+    };
+    dispatch({ type: 'message.upsert', sessionId: info.sessionID, message });
+    dispatch({
+      type: 'usage',
+      tokens: { input: info.tokens.input, output: info.tokens.output },
+      cost: info.cost,
+    });
+  }, []);
+
+  const handlePartUpdated = useCallback((props: Record<string, unknown>) => {
+    const part = props.part as Part;
+    const sessionId = (part as { sessionID?: string }).sessionID;
+    const messageId = (part as { messageID?: string }).messageID;
+    if (!sessionId || !messageId) return;
+    dispatch({ type: 'part.upsert', sessionId, messageId, part });
+    if (part.type === 'patch') {
+      dispatch({
+        type: 'patch.add',
+        patch: {
+          id: part.id,
+          messageID: messageId,
+          sessionID: sessionId,
+          file: part.file,
+          patch: part.patch,
+          status: 'pending',
+        },
+      });
+    }
+  }, []);
+
+  const handlePartRemoved = useCallback((props: Record<string, unknown>) => {
+    const part = props.part as Part;
+    const sessionId = (part as { sessionID?: string }).sessionID;
+    const messageId = (part as { messageID?: string }).messageID;
+    if (!sessionId || !messageId) return;
+    dispatch({ type: 'part.remove', sessionId, messageId, partId: part.id });
+  }, []);
+
   const handleEvent = useCallback((event: OpencodeEvent) => {
+    debugLog(`[SSE-Handler] event=${event.type}`, event.properties);
+
     const props = event.properties as Record<string, unknown>;
     switch (event.type) {
-      case 'message.updated': {
-        const info = props.info as MessageEnvelope['info'];
-        const current = stateRef.current;
-        const existing = (current.messages[info.sessionID] ?? []).find(
-          (m) => m.id === info.id,
-        );
-        const message: UiMessage = {
-          id: info.id,
-          role: info.role,
-          parts: existing?.parts ?? [],
-          streaming: info.time.completed == null && info.role === 'assistant',
-          time: info.time,
-        };
-        dispatch({ type: 'message.upsert', sessionId: info.sessionID, message });
-        dispatch({
-          type: 'usage',
-          tokens: { input: info.tokens.input, output: info.tokens.output },
-          cost: info.cost,
-        });
+      case 'message.updated':
+        handleMessageUpdated(props);
         break;
-      }
-      case 'message.part.updated': {
-        const part = props.part as Part;
-        const sessionId = (part as { sessionID?: string }).sessionID;
-        const messageId = (part as { messageID?: string }).messageID;
-        if (!sessionId || !messageId) return;
-        dispatch({ type: 'part.upsert', sessionId, messageId, part });
-        if (part.type === 'patch') {
-          dispatch({
-            type: 'patch.add',
-            patch: {
-              id: part.id,
-              messageID: messageId,
-              sessionID: sessionId,
-              file: part.file,
-              patch: part.patch,
-              status: 'pending',
-            },
-          });
-        }
+      case 'message.part.updated':
+        handlePartUpdated(props);
         break;
-      }
-      case 'message.part.removed': {
-        const part = props.part as Part;
-        const sessionId = (part as { sessionID?: string }).sessionID;
-        const messageId = (part as { messageID?: string }).messageID;
-        if (!sessionId || !messageId) return;
-        dispatch({ type: 'part.remove', sessionId, messageId, partId: part.id });
+      case 'message.part.removed':
+        handlePartRemoved(props);
         break;
-      }
       case 'session.updated': {
         const info = props.info as Session;
         const sessions = stateRef.current.sessions.map((s) =>
@@ -317,8 +464,11 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
         break;
       }
       case 'session.error': {
-        const err = props.error as string | undefined;
-        dispatch({ type: 'error', error: err ?? 'OpenCode session error' });
+        // OpenCode emits session.error for transient issues (rate limits,
+        // model unavailability, etc.) during normal operation. These are
+        // not connection errors -- the SSE status already handles real
+        // connectivity problems. Log for debugging but don't show a banner.
+        console.debug('[SSE-Handler] session.error (suppressed):', props.error);
         break;
       }
       default:
@@ -329,42 +479,30 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
   // ─── SSE lifecycle ───────────────────────────────────────────────────
 
   useEffect(() => {
+    if (!backendReady) return;
+    debugLog('Connecting SSE stream');
+
     const stream = new OpencodeEventStream({
       url: clientRef.current.getEventStreamUrl(),
       onEvent: handleEvent,
-      onStatusChange: (status) => dispatch({ type: 'sse.status', status }),
+      onStatusChange: (status) => {
+        debugLog(`SSE status change: ${status}`);
+        if (status === 'error') {
+          console.trace('[AgentContext] SSE onStatusChange -> error');
+        }
+        dispatch({ type: 'sse.status', status });
+      },
       reconnectDelay: 3000,
       maxReconnectAttempts: 10,
     });
     streamRef.current = stream;
     stream.connect();
     return () => {
+      debugLog('Disconnecting SSE stream');
       stream.disconnect();
       streamRef.current = null;
     };
-  }, [handleEvent]);
-
-  // ─── Session operations ──────────────────────────────────────────────
-
-  const refreshSessions = useCallback(async () => {
-    try {
-      const sessions = await clientRef.current.listSessions();
-      dispatch({ type: 'sessions.loaded', sessions });
-      const current = stateRef.current;
-      if (!current.activeSessionId && sessions.length > 0) {
-        dispatch({ type: 'session.select', id: sessions[0].id });
-      }
-    } catch (e) {
-      dispatch({
-        type: 'error',
-        error: e instanceof Error ? e.message : 'Failed to load sessions',
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    void refreshSessions();
-  }, [refreshSessions]);
+  }, [handleEvent, backendReady]);
 
   // Load messages when active session changes
   useEffect(() => {
@@ -381,6 +519,7 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
       })
       .catch((e) => {
         if (!cancelled) {
+          console.trace('[AgentContext] getMessages error:', e);
           dispatch({
             type: 'error',
             error: e instanceof Error ? e.message : 'Failed to load messages',
@@ -430,11 +569,25 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
     const sessionId = stateRef.current.activeSessionId;
     if (!sessionId || !text.trim()) return;
     dispatch({ type: 'error', error: null });
+    debugLog('sendMessage: cleared error, sending:', text.substring(0, 50));
+
+    // Create optimistic user message immediately so UI shows it right away
+    const ts = Date.now();
+    const userMessage: UiMessage = {
+      id: `user-${ts}-${ts.toString(36)}`,
+      role: 'user',
+      parts: [{ type: 'text', id: `ptxt-${ts}`, text: text.trim(), messageID: `user-${ts}-${ts.toString(36)}`, sessionID: sessionId }],
+      streaming: false,
+      time: { created: ts },
+    };
+    dispatch({ type: 'message.upsert', sessionId, message: userMessage });
+
     try {
       await clientRef.current.chat(sessionId, {
         parts: [{ type: 'text', text: text.trim() }],
       });
     } catch (e) {
+      console.trace('[AgentContext] sendMessage error:', e);
       dispatch({
         type: 'error',
         error: e instanceof Error ? e.message : 'Failed to send message',
@@ -475,6 +628,7 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
       state,
       client,
       cwd,
+      backendReady,
       createSession,
       selectSession,
       deleteSession,
@@ -489,6 +643,7 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
       state,
       client,
       cwd,
+      backendReady,
       createSession,
       selectSession,
       deleteSession,

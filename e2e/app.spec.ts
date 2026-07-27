@@ -26,7 +26,7 @@ test.describe("App shell", () => {
     await page.keyboard.press("Control+n");
 
     await expect(page.getByRole("option", { name: /Untitled session/ })).toBeVisible();
-    expect(mock.sessions.length).toBe(2);
+    expect(mock.sessions).toHaveLength(2);
   });
 
   test("should show connection status and token counters in the status bar", async ({ page }) => {

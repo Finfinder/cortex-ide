@@ -23,10 +23,7 @@ export interface Session {
 export type SessionListResponse = Session[];
 
 /** DELETE /session/:id returns boolean true */
-export type SessionDeleteResponse = boolean;
-
 /** POST /session/:id/abort returns boolean true */
-export type SessionAbortResponse = boolean;
 
 // ─── Message ────────────────────────────────────────────────────────────────
 
