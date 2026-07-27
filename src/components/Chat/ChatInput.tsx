@@ -112,7 +112,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
                 <AgentSelector value={agentName} onChange={(name, model) => onAgentChange(name, model)} position="top" />
               )}
               {model && onModelChange && (
-                <ModelSelector value={model} onChange={onModelChange} position="top" />
+                <ModelSelector key={model.model} value={model} onChange={onModelChange} position="top" />
               )}
             </div>
             {generating ? (

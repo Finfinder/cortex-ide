@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { sessionModelToConfig } from '@/lib/opencode/config';
+import { sessionModelToConfig, type ModelConfig } from '@/lib/opencode/config';
 import { Layout } from "@/components/Layout";
 import { useTheme } from "@/components/Theme";
 import { AgentProvider, useAgent } from "@/lib/agent";
@@ -17,10 +17,27 @@ function AgentWorkspace() {
   const { state, createSession, cancelGeneration } = useAgent();
   const { theme, toggleTheme } = useTheme();
   const [agent, setAgent] = useState(DEFAULT_AGENT);
+  const [model, setModel] = useState<ModelConfig | undefined>(undefined);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   const activeSession = state.sessions.find((s) => s.id === state.activeSessionId);
   const activeModel = sessionModelToConfig(activeSession?.model);
+
+  // Update model when session changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
+  useEffect(() => {
+    if (activeModel) {
+      setModel(activeModel);
+    }
+  }, [activeModel]);
+
+  // Handle agent change with model sync
+  const handleAgentChange = (agentName: string, agentModel?: ModelConfig) => {
+    setAgent(agentName);
+    if (agentModel) {
+      setModel(agentModel);
+    }
+  };
 
   // Global keyboard shortcuts (3.10)
   useEffect(() => {
@@ -112,9 +129,9 @@ function AgentWorkspace() {
         <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
           <ChatPanel 
             agentName={agent} 
-            onAgentChange={setAgent} 
-            model={activeModel} 
-            onModelChange={() => { /* Handle model change - would update session */ }} 
+            onAgentChange={handleAgentChange} 
+            model={model} 
+            onModelChange={setModel} 
           />
           <PatchQueue onEditExternal={handleEditExternal} />
         </div>
