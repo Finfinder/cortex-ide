@@ -13,18 +13,33 @@ const SSE_LABEL: Record<string, string> = {
  * Bottom status bar: OpenCode connection, token usage, cost, active tool calls.
  */
 export const StatusBar = memo(function StatusBar() {
-  const { state } = useAgent();
+  const { state, backendReady } = useAgent();
   const { sseStatus, tokens, cost, activeToolCalls } = state;
+
+  // Show "Initializing..." while waiting for Tauri backend
+  if (!backendReady) {
+    return (
+      <footer className={styles.bar} aria-label="Status">
+        <output
+          className={`${styles.item} ${styles.sse_connecting}`}
+          aria-label="OpenCode connection: Initializing"
+        >
+          ● Initializing...
+        </output>
+      </footer>
+    );
+  }
+
+  const statusLabel = SSE_LABEL[sseStatus] ?? 'Disconnected';
 
   return (
     <footer className={styles.bar} aria-label="Status">
-      <span
-        className={`${styles.item} ${styles[`sse_${sseStatus}`]}`}
-        role="status"
-        aria-label={`OpenCode connection: ${SSE_LABEL[sseStatus]}`}
+      <output
+        className={`${styles.item} ${styles['sse_' + sseStatus]}`}
+        aria-label={`OpenCode connection: ${statusLabel}`}
       >
-        ● {SSE_LABEL[sseStatus]}
-      </span>
+        ● {statusLabel}
+      </output>
 
       <span className={styles.item} title="Tokens used (input / output)">
         ⬆ {tokens.input} ⬇ {tokens.output}

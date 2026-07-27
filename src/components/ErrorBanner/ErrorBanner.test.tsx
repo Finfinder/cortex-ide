@@ -115,16 +115,15 @@ describe("ErrorBanner", () => {
     mockUseAgent.mockReturnValue(
       mockAgentState({ state: { sseStatus: "error", error: null } }),
     );
-    const { unmount, container } = render(<ErrorBanner />);
+    const { unmount } = render(<ErrorBanner />);
 
-    // Unmount before debounce fires
+    // Debounce timer should be pending
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+
     unmount();
 
-    // Advance past debounce — no error because component unmounted
-    act(() => {
-      vi.advanceTimersByTime(5000);
-    });
-    expect(container.firstChild).toBeNull();
+    // After unmount, no timers should remain
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("calls onRetry when retry button is clicked", () => {

@@ -71,7 +71,7 @@ export interface MockServerOptions {
  */
 export async function mockOpencodeServer(page: Page, options: MockServerOptions = {}) {
   const sessions = [...(options.sessions ?? [])];
-  const messages: Record<string, MockMessageEnvelope[]> = { ...(options.messages ?? {}) };
+  const messages: Record<string, MockMessageEnvelope[]> = options.messages ?? {};
 
   const json = (route: Route, body: unknown, status = 200) =>
     route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) });

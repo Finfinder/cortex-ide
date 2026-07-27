@@ -28,7 +28,7 @@ import type { UiMessage, PendingPatch } from './types';
 // ─── Debug logging (browser console) ──────────────────────────────────────
 
 function debugLog(...args: unknown[]) {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     console.log('[AgentContext]', ...args);
   }
 }
@@ -217,7 +217,7 @@ function reducer(state: AgentState, action: Action): AgentState {
         ),
       };
     case 'sse.status':
-      console.log('[Reducer] sse.status:', action.status, '(prev:', state.sseStatus, ')');
+      debugLog('[Reducer] sse.status:', action.status, '(prev:', state.sseStatus, ')');
       // Only update sseStatus — do NOT clear `error`. Explicit API errors
       // (500, network failure) must persist until retry or a successful
       // operation clears them. SSE reconnection is handled separately by
@@ -225,7 +225,7 @@ function reducer(state: AgentState, action: Action): AgentState {
       // automatically when sseStatus leaves 'error'.
       return { ...state, sseStatus: action.status };
     case 'error':
-      console.log('[Reducer] error:', action.error, '(prev:', state.error, ')');
+      debugLog('[Reducer] error:', action.error, '(prev:', state.error, ')');
       return { ...state, error: action.error };
     case 'usage':
       return { ...state, tokens: action.tokens, cost: action.cost };
@@ -313,25 +313,41 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
   useEffect(() => {
     let cancelled = false;
     let fallbackTimer: ReturnType<typeof setTimeout> | null = null;
+    let unlistenReady: (() => void) | null = null;
+    let unlistenError: (() => void) | null = null;
 
-    (async () => {
+    const setup = async () => {
       try {
         // Listen for errors first
-        const unlistenError = await listen<string>('backend://error', (msg) => {
+        unlistenError = await listen<string>('backend://error', (msg) => {
           if (!cancelled) {
             console.trace('[AgentContext] backend://error event:', msg);
             dispatch({ type: 'error', error: msg });
           }
         });
-        
+
+        // Guard: unmount may have happened while awaiting the promise
+        if (cancelled) {
+          unlistenError();
+          unlistenError = null;
+          return;
+        }
+
         // Then wait for ready
-        const unlistenReady = await listen<undefined>('backend://ready', () => {
+        unlistenReady = await listen<undefined>('backend://ready', () => {
           if (!cancelled) {
             if (fallbackTimer) clearTimeout(fallbackTimer);
             setBackendReady(true);
             void refreshSessions();
           }
         });
+
+        // Guard: unmount may have happened while awaiting the promise
+        if (cancelled) {
+          unlistenReady();
+          unlistenReady = null;
+          return;
+        }
 
         // Fallback: if the ready event was emitted before we registered the
         // listener (race condition), auto-start after 30 seconds.
@@ -344,13 +360,6 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
             void refreshSessions();
           }
         }, 30000);
-        
-        // If already cancelled during the async awaits, clean up immediately
-        if (cancelled) {
-          unlistenError();
-          unlistenReady();
-          if (fallbackTimer) clearTimeout(fallbackTimer);
-        }
       } catch {
         // Not running inside Tauri — fall back to immediate start
         if (!cancelled) {
@@ -358,10 +367,15 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
           void refreshSessions();
         }
       }
-    })();
+    };
+
+    setup();
+
     return () => {
       cancelled = true;
       if (fallbackTimer) clearTimeout(fallbackTimer);
+      unlistenReady?.();
+      unlistenError?.();
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -423,8 +437,7 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
   }, []);
 
   const handleEvent = useCallback((event: OpencodeEvent) => {
-    console.log(`[SSE-Handler] event=${event.type}`, JSON.stringify(event.properties).substring(0, 300));
-    debugLog(`SSE event: ${event.type} - ${JSON.stringify(event.properties)}`);
+    debugLog(`[SSE-Handler] event=${event.type}`, event.properties);
 
     const props = event.properties as Record<string, unknown>;
     switch (event.type) {
@@ -556,7 +569,7 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
     const sessionId = stateRef.current.activeSessionId;
     if (!sessionId || !text.trim()) return;
     dispatch({ type: 'error', error: null });
-    console.log('[AgentContext] sendMessage: cleared error, sending:', text.substring(0, 50));
+    debugLog('sendMessage: cleared error, sending:', text.substring(0, 50));
 
     // Create optimistic user message immediately so UI shows it right away
     const ts = Date.now();
