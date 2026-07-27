@@ -21,7 +21,7 @@ export interface ChatInputProps {
   generating: boolean;
   disabled?: boolean;
   agentName?: string;
-  onAgentChange?: (agentName: string) => void;
+  onAgentChange?: (agentName: string, model?: ModelConfig) => void;
   model?: ModelConfig;
   onModelChange?: (model: ModelConfig) => void;
 }
@@ -109,7 +109,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
           <div className={styles.footer}>
             <div className={styles.meta}>
               {agentName && onAgentChange && (
-                <AgentSelector value={agentName} onChange={onAgentChange} position="top" />
+                <AgentSelector value={agentName} onChange={(name, model) => onAgentChange(name, model)} position="top" />
               )}
               {model && onModelChange && (
                 <ModelSelector value={model} onChange={onModelChange} position="top" />

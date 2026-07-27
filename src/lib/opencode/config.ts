@@ -188,6 +188,7 @@ export const PREDEFINED_AGENTS: AgentConfig[] = [
     name: 'architect',
     description: 'System architecture and design decisions',
     systemPrompt: 'You are a software architect. Focus on system design, patterns, and trade-offs.',
+    model: { model: 'opencode/big-pickle', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
     tools: { search: true, edit: false, shell: false, git: false, web: true, lsp: true },
     enabled: true,
   },
@@ -195,6 +196,7 @@ export const PREDEFINED_AGENTS: AgentConfig[] = [
     name: 'code-reviewer',
     description: 'Code review and quality analysis',
     systemPrompt: 'You are a code reviewer. Focus on code quality, best practices, and potential issues.',
+    model: { model: 'opencode/big-pickle', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
     tools: { search: true, edit: false, shell: false, git: true, web: false, lsp: true },
     enabled: true,
   },
@@ -202,6 +204,7 @@ export const PREDEFINED_AGENTS: AgentConfig[] = [
     name: 'test-writer',
     description: 'Test generation and coverage analysis',
     systemPrompt: 'You are a test engineer. Write comprehensive tests with good coverage.',
+    model: { model: 'opencode/north-mini-code-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
     tools: { search: true, edit: true, shell: true, git: false, web: false, lsp: true },
     enabled: true,
   },
@@ -209,6 +212,7 @@ export const PREDEFINED_AGENTS: AgentConfig[] = [
     name: 'debugger',
     description: 'Debugging and error analysis',
     systemPrompt: 'You are a debugging specialist. Analyze errors, trace issues, and suggest fixes.',
+    model: { model: 'opencode/big-pickle', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
     tools: { search: true, edit: true, shell: true, git: true, web: true, lsp: true },
     enabled: true,
   },
@@ -286,9 +290,21 @@ export const PREDEFINED_AGENTS: AgentConfig[] = [
     name: 'general-assistant',
     description: 'General-purpose coding assistant',
     systemPrompt: 'You are a helpful coding assistant. Help with any programming task.',
+    model: { model: 'opencode/north-mini-code-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
     tools: { search: true, edit: true, shell: true, git: true, web: true, lsp: true },
     enabled: true,
   },
+];
+
+/** All available models from opencode-config.json */
+export const AVAILABLE_MODELS: ModelConfig[] = [
+  { model: 'opencode/big-pickle', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
+  { model: 'opencode/deepseek-v4-flash-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
+  { model: 'opencode/laguna-s-2.1-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
+  { model: 'opencode/ling-3.0-flash-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
+  { model: 'opencode/mimo-v2.5-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
+  { model: 'opencode/nemotron-3-ultra-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
+  { model: 'opencode/north-mini-code-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
 ];
 
 /**

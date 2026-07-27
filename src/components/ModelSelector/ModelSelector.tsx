@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { PREDEFINED_AGENTS, getEffectiveModel, DEFAULT_MODEL, type ModelConfig } from '@/lib/opencode/config';
+import { AVAILABLE_MODELS, type ModelConfig } from '@/lib/opencode/config';
 import styles from './ModelSelector.module.css';
 
 export interface ModelSelectorProps {
@@ -16,24 +16,19 @@ export function ModelSelector({ value, onChange, position = 'bottom' }: Readonly
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
 
-  // Get all unique models from all agents' effective models + current value
+  // Get all available models from config
   const allModels = useMemo(() => {
     const modelsMap = new Map<string, ModelConfig[]>(); // provider -> models
 
-    // Add global default model as fallback
-    const globalModel = PREDEFINED_AGENTS.find(a => a.name === 'global')?.model ?? DEFAULT_MODEL;
-
-    // Collect models from all agents
-    PREDEFINED_AGENTS.forEach(agent => {
-      if (!agent.model) return;
-      const effectiveModel = getEffectiveModel(agent, globalModel);
-      if (!modelsMap.has(effectiveModel.provider)) {
-        modelsMap.set(effectiveModel.provider, []);
+    // Add all available models from config
+    AVAILABLE_MODELS.forEach(model => {
+      if (!modelsMap.has(model.provider)) {
+        modelsMap.set(model.provider, []);
       }
-      // Avoid duplicates (compare both model and provider)
-      const exists = modelsMap.get(effectiveModel.provider)?.some(m => m.model === effectiveModel.model && m.provider === effectiveModel.provider);
+      // Avoid duplicates
+      const exists = modelsMap.get(model.provider)?.some(m => m.model === model.model && m.provider === model.provider);
       if (!exists) {
-        modelsMap.get(effectiveModel.provider)?.push(effectiveModel);
+        modelsMap.get(model.provider)?.push(model);
       }
     });
 

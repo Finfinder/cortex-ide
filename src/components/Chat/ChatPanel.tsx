@@ -7,7 +7,7 @@ import styles from './ChatPanel.module.css';
 
 export interface ChatPanelProps {
   agentName?: string;
-  onAgentChange?: (agentName: string) => void;
+  onAgentChange?: (agentName: string, model?: ModelConfig) => void;
   model?: ModelConfig;
   onModelChange?: (model: ModelConfig) => void;
 }
