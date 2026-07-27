@@ -261,7 +261,7 @@ export interface AgentContextValue {
   selectSession: (id: string) => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
   renameSession: (id: string, title: string) => Promise<void>;
-  sendMessage: (text: string) => Promise<void>;
+  sendMessage: (text: string, model?: { modelID?: string; providerID?: string }) => Promise<void>;
   cancelGeneration: () => Promise<void>;
   resolvePatch: (id: string, status: 'approved' | 'rejected') => void;
   resolveAllPatches: (status: 'approved' | 'rejected') => void;
@@ -565,7 +565,7 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
     // Keep as a no-op placeholder for future SDK support.
   }, []);
 
-  const sendMessage = useCallback(async (text: string) => {
+  const sendMessage = useCallback(async (text: string, model?: { modelID?: string; providerID?: string }) => {
     const sessionId = stateRef.current.activeSessionId;
     if (!sessionId || !text.trim()) return;
     dispatch({ type: 'error', error: null });
@@ -585,6 +585,8 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
     try {
       await clientRef.current.chat(sessionId, {
         parts: [{ type: 'text', text: text.trim() }],
+        modelID: model?.modelID,
+        providerID: model?.providerID,
       });
     } catch (e) {
       console.trace('[AgentContext] sendMessage error:', e);

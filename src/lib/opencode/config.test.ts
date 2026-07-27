@@ -25,14 +25,14 @@ describe('DEFAULT_COMPACTION', () => {
 });
 
 describe('DEFAULT_MODEL', () => {
-  it('should have gpt-4 as default model', () => {
-    expect(DEFAULT_MODEL.model).toBe('gpt-4');
-    expect(DEFAULT_MODEL.provider).toBe('openai');
+  it('should have opencode/big-pickle as default model', () => {
+    expect(DEFAULT_MODEL.model).toBe('opencode/big-pickle');
+    expect(DEFAULT_MODEL.provider).toBe('opencode');
   });
 
   it('should have small model configured', () => {
-    expect(DEFAULT_MODEL.smallModel).toBe('qwen-2.5-3b');
-    expect(DEFAULT_MODEL.smallModelProvider).toBe('ollama');
+    expect(DEFAULT_MODEL.smallModel).toBe('opencode/north-mini-code-free');
+    expect(DEFAULT_MODEL.smallModelProvider).toBe('opencode');
   });
 });
 

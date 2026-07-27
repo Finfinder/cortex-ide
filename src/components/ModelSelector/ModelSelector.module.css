@@ -27,8 +27,8 @@
   z-index: 30;
   top: calc(100% + 4px);
   left: 0;
-  width: 320px;
-  max-height: 360px;
+  width: 400px;
+  max-height: 400px;
   display: flex;
   flex-direction: column;
   background: var(--bg-secondary);
@@ -60,7 +60,26 @@
 
 .list {
   list-style: none;
+  margin: 0;
+  padding: 0;
   overflow-y: auto;
+  flex: 1;
+}
+
+.group {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.group:last-child {
+  border-bottom: none;
+}
+
+.groupHeader {
+  padding: 6px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: rgba(127, 127, 127, 0.05);
 }
 
 .option {
@@ -89,27 +108,13 @@
   font-weight: 600;
 }
 
-.optionModel {
+.optionProvider {
   font-size: 11px;
   color: var(--accent);
-}
-
-.optionDesc {
-  font-size: 11px;
-  color: var(--text-secondary);
 }
 
 .empty {
   padding: 10px;
   color: var(--text-muted);
   font-size: 12px;
-}
-
-.description {
-  margin-top: 4px;
-  font-size: 11px;
-  color: var(--text-muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }

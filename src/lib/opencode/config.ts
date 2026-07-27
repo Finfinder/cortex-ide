@@ -1,6 +1,8 @@
 // ─── OpenCode Configuration ─────────────────────────────────────────────────
 // Configuration types for compaction, model selection, and agent settings.
 
+import { Session } from './types';
+
 // ─── Compaction ─────────────────────────────────────────────────────────────
 
 export type CompactionMode = 'auto' | 'prune' | 'reserved';
@@ -57,10 +59,10 @@ export interface ModelConfig {
 }
 
 export const DEFAULT_MODEL: ModelConfig = {
-  model: 'gpt-4',
-  provider: 'openai',
-  smallModel: 'qwen-2.5-3b',
-  smallModelProvider: 'ollama',
+  model: 'opencode/big-pickle',
+  provider: 'opencode',
+  smallModel: 'opencode/north-mini-code-free',
+  smallModelProvider: 'opencode',
   maxTokens: 8192,
   temperature: 0.7,
 };
@@ -302,6 +304,23 @@ export function getEffectiveModel(
   return {
     ...globalModel,
     ...agent.model,
+  };
+}
+
+/**
+ * Convert a session model (from OpenCode API) to a ModelConfig.
+ */
+export function sessionModelToConfig(sessionModel: Session['model']): ModelConfig {
+  if (!sessionModel) {
+    return DEFAULT_MODEL;
+  }
+  return {
+    model: sessionModel.id,
+    provider: sessionModel.providerID,
+    smallModel: DEFAULT_MODEL.smallModel,
+    smallModelProvider: DEFAULT_MODEL.smallModelProvider,
+    maxTokens: DEFAULT_MODEL.maxTokens,
+    temperature: DEFAULT_MODEL.temperature,
   };
 }
 

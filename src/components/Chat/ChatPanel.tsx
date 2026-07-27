@@ -1,3 +1,4 @@
+import { ModelConfig } from '@/lib/opencode/config';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAgent } from '@/lib/agent';
 import { ChatMessageItem } from './ChatMessageItem';
@@ -6,14 +7,16 @@ import styles from './ChatPanel.module.css';
 
 export interface ChatPanelProps {
   agentName?: string;
-  modelLabel?: string;
+  onAgentChange?: (agentName: string) => void;
+  model?: ModelConfig;
+  onModelChange?: (model: ModelConfig) => void;
 }
 
 /**
  * Main chat panel: scrollable message log with streaming, plus the input box.
  * Mirrors the VS Code chat layout.
  */
-export function ChatPanel({ agentName, modelLabel }: ChatPanelProps) {
+export function ChatPanel({ agentName, onAgentChange, model, onModelChange }: ChatPanelProps) {
   const { state, sendMessage, cancelGeneration } = useAgent();
   const { activeSessionId, messages, generating, sseStatus } = state;
   const sessionMessages = useMemo(
@@ -60,12 +63,14 @@ export function ChatPanel({ agentName, modelLabel }: ChatPanelProps) {
 
       <ChatInput
         ref={inputRef}
-        onSubmit={(text) => void sendMessage(text)}
+        onSubmit={(text) => void sendMessage(text, model ? { modelID: model.model, providerID: model.provider } : undefined)}
         onCancel={() => void cancelGeneration()}
         generating={generating}
         disabled={!activeSessionId || sseStatus === 'error'}
         agentName={agentName}
-        modelLabel={modelLabel}
+        onAgentChange={onAgentChange}
+        model={model}
+        onModelChange={onModelChange}
       />
     </section>
   );

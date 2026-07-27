@@ -6,6 +6,9 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
+import { AgentSelector } from '@/components/AgentSelector';
+import { ModelSelector } from '@/components/ModelSelector';
+import { ModelConfig } from '@/lib/opencode/config';
 import styles from './ChatInput.module.css';
 
 export interface ChatInputHandle {
@@ -18,7 +21,9 @@ export interface ChatInputProps {
   generating: boolean;
   disabled?: boolean;
   agentName?: string;
-  modelLabel?: string;
+  onAgentChange?: (agentName: string) => void;
+  model?: ModelConfig;
+  onModelChange?: (model: ModelConfig) => void;
 }
 
 /**
@@ -27,7 +32,7 @@ export interface ChatInputProps {
  */
 export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
   function ChatInput(
-    { onSubmit, onCancel, generating, disabled, agentName, modelLabel },
+    { onSubmit, onCancel, generating, disabled, agentName, onAgentChange, model, onModelChange },
     ref,
   ) {
     const [value, setValue] = useState('');
@@ -103,15 +108,11 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
           />
           <div className={styles.footer}>
             <div className={styles.meta}>
-              {agentName && (
-                <span className={styles.metaItem} title="Active agent">
-                  ⊗ {agentName}
-                </span>
+              {agentName && onAgentChange && (
+                <AgentSelector value={agentName} onChange={onAgentChange} position="top" />
               )}
-              {modelLabel && (
-                <span className={styles.metaItem} title="Active model">
-                  ⚡ {modelLabel}
-                </span>
+              {model && onModelChange && (
+                <ModelSelector value={model} onChange={onModelChange} position="top" />
               )}
             </div>
             {generating ? (

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { StatusBar } from "./StatusBar";
 
@@ -63,12 +63,35 @@ describe("StatusBar", () => {
     expect(screen.getByText(/Disconnected/)).toBeInTheDocument();
   });
 
-  it("shows 'Error' when SSE is in error state", () => {
+  it("shows 'Connecting…' when SSE is in error state (debounce not yet elapsed)", () => {
     mockUseAgent.mockReturnValue(
       mockAgentState({ state: { sseStatus: "error" } }),
     );
     render(<StatusBar />);
+    // During the 4s debounce, error shows as "Connecting…"
+    expect(screen.getByText(/Connecting…/)).toBeInTheDocument();
+    expect(screen.queryByText(/Error/)).not.toBeInTheDocument();
+  });
+
+  it("shows 'Error' when SSE is in error state after debounce", () => {
+    vi.useFakeTimers();
+    mockUseAgent.mockReturnValue(
+      mockAgentState({ state: { sseStatus: "error" } }),
+    );
+    render(<StatusBar />);
+    // Fast-forward past the 4s debounce
+    act(() => vi.advanceTimersByTime(4000));
     expect(screen.getByText(/Error/)).toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it("shows 'Working…' when generating and SSE is in error state", () => {
+    mockUseAgent.mockReturnValue(
+      mockAgentState({ state: { sseStatus: "error", generating: true } }),
+    );
+    render(<StatusBar />);
+    expect(screen.getByText(/Working…/)).toBeInTheDocument();
+    expect(screen.queryByText(/Error/)).not.toBeInTheDocument();
   });
 
   it("displays token counts", () => {

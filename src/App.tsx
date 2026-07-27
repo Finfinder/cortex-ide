@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { sessionModelToConfig } from '@/lib/opencode/config';
 import { Layout } from "@/components/Layout";
 import { useTheme } from "@/components/Theme";
 import { AgentProvider, useAgent } from "@/lib/agent";
@@ -6,7 +7,6 @@ import type { PendingPatch } from "@/lib/agent/types";
 import { SessionList } from "@/components/Sessions";
 import { ChatPanel } from "@/components/Chat";
 import { PatchQueue } from "@/components/PatchReview";
-import { AgentSelector } from "@/components/AgentSelector";
 import { StatusBar } from "@/components/StatusBar";
 import { ErrorBanner } from "@/components/ErrorBanner";
 
@@ -20,6 +20,7 @@ function AgentWorkspace() {
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   const activeSession = state.sessions.find((s) => s.id === state.activeSessionId);
+  const activeModel = sessionModelToConfig(activeSession?.model);
 
   // Global keyboard shortcuts (3.10)
   useEffect(() => {
@@ -104,13 +105,17 @@ function AgentWorkspace() {
           <span style={{ fontSize: "13px", fontWeight: 600 }}>
             {activeSession?.title ?? "Chat"}
           </span>
-          <AgentSelector value={agent} onChange={setAgent} />
         </header>
 
         <ErrorBanner />
 
         <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-          <ChatPanel agentName={agent} modelLabel={activeSession?.model?.id} />
+          <ChatPanel 
+            agentName={agent} 
+            onAgentChange={setAgent} 
+            model={activeModel} 
+            onModelChange={() => { /* Handle model change - would update session */ }} 
+          />
           <PatchQueue onEditExternal={handleEditExternal} />
         </div>
 
