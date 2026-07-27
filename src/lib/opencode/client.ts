@@ -5,8 +5,6 @@
 import type {
   Session,
   SessionListResponse,
-  SessionDeleteResponse,
-  SessionAbortResponse,
   ChatResponse,
   ChatMessage,
   MessageListResponse,
@@ -80,12 +78,12 @@ export class OpencodeClient {
 
   /** Delete a session. Returns true on success. */
   async deleteSession(id: string): Promise<boolean> {
-    return this.delete<SessionDeleteResponse>(`/session/${id}`);
+    return this.delete<boolean>(`/session/${id}`);
   }
 
   /** Abort an ongoing operation in a session. Returns true on success. */
   async abortSession(id: string): Promise<boolean> {
-    return this.post<SessionAbortResponse>(`/session/${id}/abort`);
+    return this.post<boolean>(`/session/${id}/abort`);
   }
 
   /** Get messages for a session. */
@@ -127,6 +125,9 @@ export class OpencodeClient {
     body?: unknown,
   ): Promise<T> {
     const url = `${this.baseUrl}${path}`;
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[OpencodeClient] ${method} ${url}`, body ? JSON.stringify(body) : '');
+    }
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
@@ -150,6 +151,7 @@ export class OpencodeClient {
 
       if (!response.ok) {
         const text = await response.text().catch(() => '');
+        console.error(`[OpencodeClient] ${method} ${path} failed:`, response.status, response.statusText);
         throw new OpencodeClientError(
           `OpenCode API error: ${response.status} ${response.statusText}`,
           response.status,

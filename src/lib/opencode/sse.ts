@@ -56,6 +56,8 @@ export class OpencodeEventStream {
   private reconnectAttempts = 0;
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private _status: SseStatus = 'disconnected';
+  /** When true, errors during reconnect won't change status to 'error' (silent mode). */
+  private _silentReconnect = false;
 
   constructor(config: SseConfig) {
     this.config = {
@@ -92,6 +94,7 @@ export class OpencodeEventStream {
     this.abortController?.abort();
     this.abortController = null;
     this.reconnectAttempts = 0;
+    this._silentReconnect = false;
     this.setStatus('disconnected');
   }
 
@@ -99,13 +102,21 @@ export class OpencodeEventStream {
 
   private setStatus(status: SseStatus): void {
     if (this._status !== status) {
+      if (status === 'error') {
+        console.trace('[SSE] setStatus -> error (prev:', this._status, ')');
+      }
       this._status = status;
       this.config.onStatusChange(status);
     }
   }
 
-  private async startConnection(): Promise<void> {
-    this.setStatus('connecting');
+  private async startConnection(silent = false): Promise<void> {
+    // Only show 'connecting' status on initial connect or after an error.
+    // Silent reconnects (stream ended normally) keep the 'connected' status
+    // to avoid UI flicker during the brief reconnection gap.
+    if (!silent || this._status !== 'connected') {
+      this.setStatus('connecting');
+    }
 
     this.abortController?.abort();
     this.abortController = new AbortController();
@@ -135,6 +146,7 @@ export class OpencodeEventStream {
 
       this.setStatus('connected');
       this.reconnectAttempts = 0;
+      this._silentReconnect = false;
 
       await this.readStream(response.body, signal);
     } catch (error) {
@@ -142,11 +154,13 @@ export class OpencodeEventStream {
         // Intentional disconnect, don't reconnect
         return;
       }
-      // Log or handle connection error
-      console.debug('SSE connection error:', error);
+      console.error('[SSE] Connection error:', error);
 
-      this.setStatus('error');
-      this.scheduleReconnect();
+      // During silent reconnect, don't show error status to avoid UI flicker
+      if (!this._silentReconnect) {
+        this.setStatus('error');
+      }
+      this.scheduleReconnect(this._silentReconnect);
     }
   }
 
@@ -163,9 +177,12 @@ export class OpencodeEventStream {
         const { done, value } = await reader.read();
 
         if (done) {
-          // Stream ended normally
-          this.setStatus('disconnected');
-          this.scheduleReconnect();
+          // Stream ended normally — OpenCode closes the SSE connection after
+          // sending events (HTTP/1.1 without persistent keep-alive). This is
+          // expected behavior, NOT an error. Reconnect silently without
+          // changing the status to 'disconnected' to avoid UI flicker.
+          console.debug('[SSE] Stream ended normally, reconnecting silently');
+          this.scheduleReconnect(true);
           return;
         }
 
@@ -174,11 +191,17 @@ export class OpencodeEventStream {
           return;
         }
 
-        buffer += decoder.decode(value, { stream: true });
+        const chunk = decoder.decode(value, { stream: true });
+        console.debug('[SSE] Raw chunk:', JSON.stringify(chunk.substring(0, 200)));
+        buffer += chunk;
 
         // Parse complete SSE messages from buffer
         const { events, remaining } = parseSseBuffer(buffer);
         buffer = remaining;
+
+        if (events.length > 0) {
+          console.log(`[SSE] Parsed ${events.length} event(s)`);
+        }
 
         for (const event of events) {
           this.config.onEvent(event);
@@ -186,28 +209,32 @@ export class OpencodeEventStream {
       }
     } catch (error) {
       if (!signal.aborted) {
-        console.debug('SSE read error:', error);
-        this.setStatus('error');
-        this.scheduleReconnect();
+        console.error('[SSE] Read error:', error);
+        if (!this._silentReconnect) {
+          this.setStatus('error');
+        }
+        this.scheduleReconnect(this._silentReconnect);
       }
     } finally {
       reader.releaseLock();
     }
   }
 
-  private scheduleReconnect(): void {
+  private scheduleReconnect(silent = false): void {
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
       this.setStatus('disconnected');
+      this._silentReconnect = false;
       return;
     }
 
     this.reconnectAttempts++;
     const delay = this.config.reconnectDelay;
+    this._silentReconnect = silent;
 
     this.clearReconnectTimer();
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
-      this.startConnection();
+      this.startConnection(silent);
     }, delay);
   }
 
@@ -281,6 +308,7 @@ function parseSseEvent(block: string): OpencodeEvent | null {
   }
 
   if (!data) {
+    console.debug('[SSE Parser] No data in event block:', block.substring(0, 100));
     return null;
   }
 
@@ -290,17 +318,20 @@ function parseSseEvent(block: string): OpencodeEvent | null {
     // Fall back to the SSE "event:" header if present, then the JSON "type".
     const type = eventType ?? parsed.type;
     if (!type) {
+      console.debug('[SSE Parser] No event type in:', JSON.stringify(parsed).substring(0, 200));
       return null;
     }
     // OpenCode wraps event-specific data in a "properties" key.
     // Unwrap it so the event shape is { type, properties: <actual data> }.
     const properties = parsed.properties ?? parsed;
+    console.log(`[SSE Parser] Parsed event: ${type}`, Object.keys(properties));
     return {
       type: type as EventType,
       properties,
     };
   } catch {
     // Malformed JSON - skip this event
+    console.error('[SSE Parser] Failed to parse JSON:', data.substring(0, 200));
     return null;
   }
 }

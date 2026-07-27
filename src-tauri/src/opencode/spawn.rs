@@ -6,7 +6,7 @@
 //! - Exponential backoff state for restart attempts
 //!
 //! NOTE: Health checking is handled separately by the `health` module.
-//! Automatic crash restart is not yet implemented — callers should use
+//! Automatic crash restart is not yet implemented -- callers should use
 //! `is_alive()` + `restart_count()` to implement their own monitoring.
 
 use std::path::PathBuf;

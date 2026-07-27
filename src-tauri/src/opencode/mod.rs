@@ -7,6 +7,5 @@ pub mod detect;
 pub mod spawn;
 pub mod health;
 
+// Re-exports needed by spawn.rs internal code
 pub use detect::{detect_opencode_binary, DetectError};
-pub use spawn::{SpawnManager, SpawnConfig, SpawnError, ManagedProcess};
-pub use health::{HealthChecker, HealthStatus};
