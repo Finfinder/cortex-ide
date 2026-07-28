@@ -27,6 +27,14 @@ export class ChatPage {
     return this.page.getByRole("article", { name: "Assistant message" });
   }
 
+  get modelSelector(): Locator {
+    return this.page.getByRole("button", { name: /Select model/ });
+  }
+
+  get agentSelector(): Locator {
+    return this.page.getByRole("button", { name: /Select agent/ });
+  }
+
   async send(text: string): Promise<void> {
     await this.input.fill(text);
     await this.input.press("Control+Enter");

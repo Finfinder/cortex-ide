@@ -193,3 +193,20 @@ Zbudować pełny interfejs agenta: chat z streamingiem, lista sesji, wywołania 
   - **Fix 3 (MEDIUM)** — nowe testy jednostkowe: `src/components/ErrorBanner/ErrorBanner.test.tsx` (8 testów: stany backendReady, debounce błędów SSE 4000ms, recovery przed debounce, cleanup timerów, onRetry, refreshSessions fallback) i `src/components/StatusBar/StatusBar.test.tsx` (8 testów: stany SSE, tokeny, koszt `$ 0.0500`, aktywne tool calls).
   - **LOW-1 (po code review)** — `BackendReadyPayload` użyty w `AgentContext.tsx` jako `listen<BackendReadyPayload>('backend://ready', ...)` (zamiast `listen<undefined>`) — dokumentacja kontraktu IPC.
   - Walidacja: **tsc 0 błędów, 94/94 unit testów PASS** (2 E2E pre-existing — wymagają serwera OpenCode). Code review (agent code-reviewer): **APPROVED**.
+- 2026-07-27 — Relokacja AgentSelector z headera do stopki ChatInput (Issue #3, branch `feat/0.0.1/Issue/3`):
+  - `App.tsx`: usunięto `<AgentSelector>` z headera, dodano `onAgentChange={setAgent}` do ChatPanel.
+  - `ChatPanel.tsx`: dodano prop `onAgentChange?: (agentName: string) => void`, przekazany do ChatInput.
+  - `ChatInput.tsx`: zaimportowano AgentSelector, dodano prop `onAgentChange`, zastąpiono statyczną etykietę `⊗ {agentName}` interaktywnym `<AgentSelector value={agentName} onChange={onAgentChange} position="top" />`.
+  - `AgentSelector.tsx`: dodano prop `position?: 'top' | 'bottom'` (default: `'bottom'`), klasa `dropdownTop` dla otwierania dropdownu do góry.
+  - `AgentSelector.module.css`: dodano `.dropdownTop` (`top: auto; bottom: calc(100% + 4px)`).
+  - Walidacja: **tsc 0 błędów, lint 0 errors, testy 96/96, build ✓**.
+  - Code review: wykonane samodzielnie (code-reviewer agent niedostępny — błąd filtrowania). Werdykt: **APPROVE**. Uwaga minor: opis agenta (`current?.description`) renderuje się poniżej triggera również w footerze — może być zatłoczone; do rozważenia ukrycie opisu gdy `position="top"`.
+- 2026-07-27 — Dodanie Model Selector obok AgentSelector w stopce ChatInput (Issue #3, branch `feat/0.0.1/Issue/3`):
+  - Nowy komponent `ModelSelector` (`src/components/ModelSelector/`) z grupowaniem modeli według dostawcy i wyszukiwaniem.
+  - `ChatInput.tsx`: zastąpiono statyczny `⚡ {modelLabel}` interaktywnym `<ModelSelector value={model} onChange={onModelChange} position="top" />`.
+  - `ChatPanel.tsx`: rozszerzono props o `model?: ModelConfig` i `onModelChange?: (model: ModelConfig) => void`.
+  - `App.tsx`: konwersja modelu sesji (`Session['model']`) na `ModelConfig` poprzez `sessionModelToConfig`.
+  - `config.ts`: dodana funkcja `sessionModelToConfig` do konwersji modelu sesji na config.
+  - Layout footera zmieniony: meta rowek z AgentSelector i ModelSelector u góry footera, dropdown otwiera się w górę (`position="top"`), by nie zasłaniać inputa wiadomości.
+  - Naprawione SonarQube issues: S6759 (props readonly), S4666 (duplikat CSS).
+  - Walidacja: **tsc 0 błędów, lint 0 errors, testy 96/96, build ✓**.

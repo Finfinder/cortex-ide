@@ -31,3 +31,7 @@
 .sse_error {
   color: var(--diff-remove-fg);
 }
+
+.sse_working {
+  color: var(--accent);
+}

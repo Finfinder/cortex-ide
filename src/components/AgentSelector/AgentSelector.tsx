@@ -1,17 +1,19 @@
 import { useMemo, useState } from 'react';
-import { PREDEFINED_AGENTS } from '@/lib/opencode/config';
+import { PREDEFINED_AGENTS, getEffectiveModel, DEFAULT_MODEL, type ModelConfig } from '@/lib/opencode/config';
 import styles from './AgentSelector.module.css';
 
 export interface AgentSelectorProps {
   value: string;
-  onChange: (agentName: string) => void;
+  onChange: (agentName: string, model?: ModelConfig) => void;
+  /** Dropdown opens upward (for bottom-of-screen placement). Default: downward. */
+  position?: 'top' | 'bottom';
 }
 
 /**
  * Agent dropdown with per-agent config summary (model, thinking effort,
  * description). Default agent: software-engineer.
  */
-export function AgentSelector({ value, onChange }: AgentSelectorProps) {
+export function AgentSelector({ value, onChange, position = 'bottom' }: Readonly<AgentSelectorProps>) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
 
@@ -25,8 +27,6 @@ export function AgentSelector({ value, onChange }: AgentSelectorProps) {
         (a.description ?? '').toLowerCase().includes(q),
     );
   }, [query]);
-
-  const current = PREDEFINED_AGENTS.find((a) => a.name === value);
 
   return (
     <div className={styles.container}>
@@ -43,7 +43,7 @@ export function AgentSelector({ value, onChange }: AgentSelectorProps) {
       </button>
 
       {open && (
-        <div className={styles.dropdown} role="listbox" aria-label="Agents">
+        <div className={`${styles.dropdown} ${position === 'top' ? styles.dropdownTop : ''}`} role="listbox" aria-label="Agents">
           <input
             type="search"
             className={styles.search}
@@ -61,7 +61,8 @@ export function AgentSelector({ value, onChange }: AgentSelectorProps) {
                   aria-selected={a.name === value}
                   className={`${styles.option} ${a.name === value ? styles.selected : ''}`}
                   onClick={() => {
-                    onChange(a.name);
+                    const model = a.model ? getEffectiveModel(a, DEFAULT_MODEL) : undefined;
+                    onChange(a.name, model);
                     setOpen(false);
                   }}
                 >
@@ -82,11 +83,6 @@ export function AgentSelector({ value, onChange }: AgentSelectorProps) {
         </div>
       )}
 
-      {current?.description && (
-        <p className={styles.description} title={current.description}>
-          {current.description}
-        </p>
-      )}
     </div>
   );
 }
