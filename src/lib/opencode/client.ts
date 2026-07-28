@@ -62,7 +62,10 @@ export class OpencodeClient {
   // ─── Session Endpoints ──────────────────────────────────────────────────
 
   /** Create a new session. Returns just the session id. */
-  async createSession(): Promise<{ id: string }> {
+  async createSession(model?: { id: string; providerID: string }): Promise<{ id: string }> {
+    if (model) {
+      return this.post<{ id: string }>('/session', { model });
+    }
     return this.post<{ id: string }>('/session');
   }
 

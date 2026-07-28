@@ -257,18 +257,18 @@ export interface AgentContextValue {
   cwd: string;
   /** Whether the Tauri backend has emitted the ready event. */
   backendReady: boolean;
-  createSession: () => Promise<void>;
+  createSession: (model?: { id: string; providerID: string }) => Promise<void>;
   selectSession: (id: string) => Promise<void>;
   deleteSession: (id: string) => Promise<void>;
   renameSession: (id: string, title: string) => Promise<void>;
-  sendMessage: (text: string) => Promise<void>;
+  sendMessage: (text: string, model?: { modelID?: string; providerID?: string }) => Promise<void>;
   cancelGeneration: () => Promise<void>;
   resolvePatch: (id: string, status: 'approved' | 'rejected') => void;
   resolveAllPatches: (status: 'approved' | 'rejected') => void;
   refreshSessions: () => Promise<void>;
 }
 
-const AgentContext = createContext<AgentContextValue | null>(null);
+export const AgentContext = createContext<AgentContextValue | null>(null);
 
 export interface AgentProviderProps {
   readonly baseUrl: string;
@@ -474,13 +474,15 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
       default:
         break;
     }
-  }, []);
+  }, [handleMessageUpdated, handlePartUpdated, handlePartRemoved]);
 
   // ─── SSE lifecycle ───────────────────────────────────────────────────
 
   useEffect(() => {
     if (!backendReady) return;
     debugLog('Connecting SSE stream');
+
+    let wasConnected = false;
 
     const stream = new OpencodeEventStream({
       url: clientRef.current.getEventStreamUrl(),
@@ -491,6 +493,27 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
           console.trace('[AgentContext] SSE onStatusChange -> error');
         }
         dispatch({ type: 'sse.status', status });
+
+        // When SSE reconnects after a disconnection, refresh messages to
+        // catch any events that were missed during the reconnection gap.
+        if (status === 'connected' && wasConnected) {
+          debugLog('SSE reconnected — refreshing messages');
+          const current = stateRef.current;
+          const id = current.activeSessionId;
+          if (id) {
+            clientRef.current
+              .getMessages(id)
+              .then((envelopes) => {
+                dispatch({ type: 'messages.loaded', sessionId: id, envelopes });
+              })
+              .catch((e) => {
+                console.trace('[AgentContext] post-reconnect getMessages error:', e);
+              });
+          }
+        }
+        if (status === 'connected') {
+          wasConnected = true;
+        }
       },
       reconnectDelay: 3000,
       maxReconnectAttempts: 10,
@@ -531,9 +554,9 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
     };
   }, [state.activeSessionId, state.messages]);
 
-  const createSession = useCallback(async () => {
+  const createSession = useCallback(async (model?: { id: string; providerID: string }) => {
     try {
-      const { id } = await clientRef.current.createSession();
+      const { id } = await clientRef.current.createSession(model);
       const session = await clientRef.current.getSession(id);
       dispatch({ type: 'session.created', session });
     } catch (e) {
@@ -565,7 +588,7 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
     // Keep as a no-op placeholder for future SDK support.
   }, []);
 
-  const sendMessage = useCallback(async (text: string) => {
+  const sendMessage = useCallback(async (text: string, _model?: { modelID?: string; providerID?: string }) => {
     const sessionId = stateRef.current.activeSessionId;
     if (!sessionId || !text.trim()) return;
     dispatch({ type: 'error', error: null });
@@ -583,9 +606,29 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
     dispatch({ type: 'message.upsert', sessionId, message: userMessage });
 
     try {
-      await clientRef.current.chat(sessionId, {
+      // OpenCode 1.18.8 ignores modelID/providerID in message body;
+      // the model must be set on the session at creation time.
+      const response = await clientRef.current.chat(sessionId, {
         parts: [{ type: 'text', text: text.trim() }],
       });
+
+      // Use the HTTP response as a fallback: only upsert the assistant message
+      // if SSE hasn't already delivered it. This prevents race conditions where
+      // the HTTP response (which may have empty parts initially) overwrites
+      // parts that SSE already streamed.
+      const existing = (stateRef.current.messages[sessionId] ?? []).find(
+        (m) => m.id === response.info.id,
+      );
+      if (!existing) {
+        const assistantMessage: UiMessage = {
+          id: response.info.id,
+          role: response.info.role,
+          parts: response.parts,
+          streaming: response.info.time.completed == null && response.info.role === 'assistant',
+          time: response.info.time,
+        };
+        dispatch({ type: 'message.upsert', sessionId, message: assistantMessage });
+      }
     } catch (e) {
       console.trace('[AgentContext] sendMessage error:', e);
       dispatch({

@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useAgent } from '@/lib/agent';
+import type { ModelConfig } from '@/lib/opencode/config';
 import styles from './SessionList.module.css';
 
 /**
  * Sidebar session list: create, switch, delete, search.
  */
-export function SessionList() {
+export function SessionList({ model }: { model?: ModelConfig }) {
   const { state, createSession, selectSession, deleteSession } = useAgent();
   const { sessions, activeSessionId } = state;
   const [query, setQuery] = useState('');
@@ -23,7 +24,12 @@ export function SessionList() {
         <button
           type="button"
           className={styles.newButton}
-          onClick={() => void createSession()}
+          onClick={() => {
+            const modelArg = model
+              ? { id: model.model.split('/')[1] ?? model.model, providerID: model.model.split('/')[0] ?? model.provider }
+              : undefined;
+            void createSession(modelArg);
+          }}
           aria-label="New session (Ctrl+N)"
           title="New session (Ctrl+N)"
         >

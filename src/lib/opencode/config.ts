@@ -1,6 +1,9 @@
 // ─── OpenCode Configuration ─────────────────────────────────────────────────
 // Configuration types for compaction, model selection, and agent settings.
 
+import type { Session } from './types';
+
+
 // ─── Compaction ─────────────────────────────────────────────────────────────
 
 export type CompactionMode = 'auto' | 'prune' | 'reserved';
@@ -57,10 +60,10 @@ export interface ModelConfig {
 }
 
 export const DEFAULT_MODEL: ModelConfig = {
-  model: 'gpt-4',
-  provider: 'openai',
-  smallModel: 'qwen-2.5-3b',
-  smallModelProvider: 'ollama',
+  model: 'opencode/big-pickle',
+  provider: 'opencode',
+  smallModel: 'opencode/north-mini-code-free',
+  smallModelProvider: 'opencode',
   maxTokens: 8192,
   temperature: 0.7,
 };
@@ -180,12 +183,13 @@ export const DEFAULT_OPENCODE_SETTINGS: OpencodeSettings = {
 
 // ─── Predefined Agents ──────────────────────────────────────────────────────
 
-/** Predefined agent templates (from repo: 15 agents) */
+/** Predefined agent templates (from repo: 15 + 4 new agents) */
 export const PREDEFINED_AGENTS: AgentConfig[] = [
   {
     name: 'architect',
     description: 'System architecture and design decisions',
     systemPrompt: 'You are a software architect. Focus on system design, patterns, and trade-offs.',
+    model: { model: 'opencode/big-pickle', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
     tools: { search: true, edit: false, shell: false, git: false, web: true, lsp: true },
     enabled: true,
   },
@@ -193,6 +197,7 @@ export const PREDEFINED_AGENTS: AgentConfig[] = [
     name: 'code-reviewer',
     description: 'Code review and quality analysis',
     systemPrompt: 'You are a code reviewer. Focus on code quality, best practices, and potential issues.',
+    model: { model: 'opencode/big-pickle', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
     tools: { search: true, edit: false, shell: false, git: true, web: false, lsp: true },
     enabled: true,
   },
@@ -200,6 +205,7 @@ export const PREDEFINED_AGENTS: AgentConfig[] = [
     name: 'test-writer',
     description: 'Test generation and coverage analysis',
     systemPrompt: 'You are a test engineer. Write comprehensive tests with good coverage.',
+    model: { model: 'opencode/north-mini-code-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
     tools: { search: true, edit: true, shell: true, git: false, web: false, lsp: true },
     enabled: true,
   },
@@ -207,6 +213,7 @@ export const PREDEFINED_AGENTS: AgentConfig[] = [
     name: 'debugger',
     description: 'Debugging and error analysis',
     systemPrompt: 'You are a debugging specialist. Analyze errors, trace issues, and suggest fixes.',
+    model: { model: 'opencode/big-pickle', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
     tools: { search: true, edit: true, shell: true, git: true, web: true, lsp: true },
     enabled: true,
   },
@@ -284,9 +291,54 @@ export const PREDEFINED_AGENTS: AgentConfig[] = [
     name: 'general-assistant',
     description: 'General-purpose coding assistant',
     systemPrompt: 'You are a helpful coding assistant. Help with any programming task.',
+    model: { model: 'opencode/north-mini-code-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
     tools: { search: true, edit: true, shell: true, git: true, web: true, lsp: true },
     enabled: true,
   },
+  // ─── New AI Agents ──────────────────────────────────────────────────────
+  {
+    name: 'researcher',
+    description: 'Deep code research and knowledge gathering',
+    systemPrompt: 'You are a research specialist. Analyze codebases, gather context from multiple sources, trace dependencies, identify patterns, and compile comprehensive reports. Focus on understanding how systems work before making recommendations.',
+    model: { model: 'opencode/big-pickle', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
+    tools: { search: true, edit: false, shell: false, git: true, web: true, lsp: true },
+    enabled: true,
+  },
+  {
+    name: 'tester',
+    description: 'Advanced testing and quality assurance',
+    systemPrompt: 'You are a QA engineer. Write unit, integration, and e2e tests. Analyze test coverage, identify untested paths, create test fixtures, and ensure code reliability. Use appropriate testing frameworks and patterns.',
+    model: { model: 'opencode/north-mini-code-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
+    tools: { search: true, edit: true, shell: true, git: false, web: false, lsp: true },
+    enabled: true,
+  },
+  {
+    name: 'translator',
+    description: 'Code translation between languages and frameworks',
+    systemPrompt: 'You are a code translator. Convert code between programming languages and frameworks while preserving logic, idioms, and best practices. Support TypeScript/JavaScript, Python, Go, Rust, Java, C#, and more.',
+    model: { model: 'opencode/big-pickle', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
+    tools: { search: true, edit: true, shell: false, git: false, web: true, lsp: true },
+    enabled: true,
+  },
+  {
+    name: 'documenter',
+    description: 'Comprehensive documentation generation',
+    systemPrompt: 'You are a documentation specialist. Generate JSDoc/TSDoc comments, README files, API documentation, inline comments, and architecture docs. Write clear, concise documentation that explains WHY, not just WHAT.',
+    model: { model: 'opencode/north-mini-code-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
+    tools: { search: true, edit: true, shell: false, git: false, web: true, lsp: true },
+    enabled: true,
+  },
+];
+
+/** All available models from opencode-config.json */
+export const AVAILABLE_MODELS: ModelConfig[] = [
+  { model: 'opencode/big-pickle', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
+  { model: 'opencode/deepseek-v4-flash-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
+  { model: 'opencode/laguna-s-2.1-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
+  { model: 'opencode/ling-3.0-flash-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
+  { model: 'opencode/mimo-v2.5-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
+  { model: 'opencode/nemotron-3-ultra-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
+  { model: 'opencode/north-mini-code-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
 ];
 
 /**
@@ -302,6 +354,25 @@ export function getEffectiveModel(
   return {
     ...globalModel,
     ...agent.model,
+  };
+}
+
+/**
+ * Convert a session model (from OpenCode API) to a ModelConfig.
+ */
+export function sessionModelToConfig(sessionModel: Session['model']): ModelConfig {
+  if (!sessionModel) {
+    return DEFAULT_MODEL;
+  }
+  return {
+    // Use "provider/id" format (matching DEFAULT_MODEL) so split('/') logic
+    // in App.tsx/SessionList.tsx produces correct id and providerID.
+    model: `${sessionModel.providerID}/${sessionModel.id}`,
+    provider: sessionModel.providerID,
+    smallModel: DEFAULT_MODEL.smallModel,
+    smallModelProvider: DEFAULT_MODEL.smallModelProvider,
+    maxTokens: DEFAULT_MODEL.maxTokens,
+    temperature: DEFAULT_MODEL.temperature,
   };
 }
 
