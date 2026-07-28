@@ -82,7 +82,6 @@ describe("StatusBar", () => {
     // Fast-forward past the 4s debounce
     act(() => vi.advanceTimersByTime(4000));
     expect(screen.getByText(/Error/)).toBeInTheDocument();
-    vi.useRealTimers();
   });
 
   it("shows 'Working…' when generating and SSE is in error state", () => {
@@ -117,5 +116,9 @@ describe("StatusBar", () => {
     );
     render(<StatusBar />);
     expect(screen.getByText(/3/)).toBeInTheDocument();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 });

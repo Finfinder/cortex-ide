@@ -1,7 +1,8 @@
 // ─── OpenCode Configuration ─────────────────────────────────────────────────
 // Configuration types for compaction, model selection, and agent settings.
 
-import { Session } from './types';
+import type { Session } from './types';
+
 
 // ─── Compaction ─────────────────────────────────────────────────────────────
 
@@ -182,7 +183,7 @@ export const DEFAULT_OPENCODE_SETTINGS: OpencodeSettings = {
 
 // ─── Predefined Agents ──────────────────────────────────────────────────────
 
-/** Predefined agent templates (from repo: 15 agents) */
+/** Predefined agent templates (from repo: 15 + 4 new agents) */
 export const PREDEFINED_AGENTS: AgentConfig[] = [
   {
     name: 'architect',
@@ -294,6 +295,39 @@ export const PREDEFINED_AGENTS: AgentConfig[] = [
     tools: { search: true, edit: true, shell: true, git: true, web: true, lsp: true },
     enabled: true,
   },
+  // ─── New AI Agents ──────────────────────────────────────────────────────
+  {
+    name: 'researcher',
+    description: 'Deep code research and knowledge gathering',
+    systemPrompt: 'You are a research specialist. Analyze codebases, gather context from multiple sources, trace dependencies, identify patterns, and compile comprehensive reports. Focus on understanding how systems work before making recommendations.',
+    model: { model: 'opencode/big-pickle', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
+    tools: { search: true, edit: false, shell: false, git: true, web: true, lsp: true },
+    enabled: true,
+  },
+  {
+    name: 'tester',
+    description: 'Advanced testing and quality assurance',
+    systemPrompt: 'You are a QA engineer. Write unit, integration, and e2e tests. Analyze test coverage, identify untested paths, create test fixtures, and ensure code reliability. Use appropriate testing frameworks and patterns.',
+    model: { model: 'opencode/north-mini-code-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
+    tools: { search: true, edit: true, shell: true, git: false, web: false, lsp: true },
+    enabled: true,
+  },
+  {
+    name: 'translator',
+    description: 'Code translation between languages and frameworks',
+    systemPrompt: 'You are a code translator. Convert code between programming languages and frameworks while preserving logic, idioms, and best practices. Support TypeScript/JavaScript, Python, Go, Rust, Java, C#, and more.',
+    model: { model: 'opencode/big-pickle', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
+    tools: { search: true, edit: true, shell: false, git: false, web: true, lsp: true },
+    enabled: true,
+  },
+  {
+    name: 'documenter',
+    description: 'Comprehensive documentation generation',
+    systemPrompt: 'You are a documentation specialist. Generate JSDoc/TSDoc comments, README files, API documentation, inline comments, and architecture docs. Write clear, concise documentation that explains WHY, not just WHAT.',
+    model: { model: 'opencode/north-mini-code-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode' },
+    tools: { search: true, edit: true, shell: false, git: false, web: true, lsp: true },
+    enabled: true,
+  },
 ];
 
 /** All available models from opencode-config.json */
@@ -331,7 +365,9 @@ export function sessionModelToConfig(sessionModel: Session['model']): ModelConfi
     return DEFAULT_MODEL;
   }
   return {
-    model: sessionModel.id,
+    // Use "provider/id" format (matching DEFAULT_MODEL) so split('/') logic
+    // in App.tsx/SessionList.tsx produces correct id and providerID.
+    model: `${sessionModel.providerID}/${sessionModel.id}`,
     provider: sessionModel.providerID,
     smallModel: DEFAULT_MODEL.smallModel,
     smallModelProvider: DEFAULT_MODEL.smallModelProvider,

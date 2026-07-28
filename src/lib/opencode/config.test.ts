@@ -55,8 +55,8 @@ describe('DEFAULT_OPENCODE_SETTINGS', () => {
 });
 
 describe('PREDEFINED_AGENTS', () => {
-  it('should have 15 agents', () => {
-    expect(PREDEFINED_AGENTS).toHaveLength(15);
+  it('should have 19 agents', () => {
+    expect(PREDEFINED_AGENTS).toHaveLength(19);
   });
 
   it('should have unique agent names', () => {
@@ -65,7 +65,7 @@ describe('PREDEFINED_AGENTS', () => {
     expect(uniqueNames.size).toBe(names.length);
   });
 
-  it('should have architect, code-reviewer, test-writer, and general-assistant enabled by default', () => {
+  it('should have architect, code-reviewer, test-writer, researcher, tester, translator, documenter, and general-assistant enabled by default', () => {
     const enabledAgents = PREDEFINED_AGENTS.filter((a) => a.enabled);
     const enabledNames = enabledAgents.map((a) => a.name);
     expect(enabledNames).toContain('architect');
@@ -73,6 +73,10 @@ describe('PREDEFINED_AGENTS', () => {
     expect(enabledNames).toContain('test-writer');
     expect(enabledNames).toContain('debugger');
     expect(enabledNames).toContain('general-assistant');
+    expect(enabledNames).toContain('researcher');
+    expect(enabledNames).toContain('tester');
+    expect(enabledNames).toContain('translator');
+    expect(enabledNames).toContain('documenter');
   });
 
   it('should have system prompts for all agents', () => {

@@ -63,7 +63,7 @@ export function ChatPanel({ agentName, onAgentChange, model, onModelChange }: Ch
 
       <ChatInput
         ref={inputRef}
-        onSubmit={(text) => void sendMessage(text, model ? { modelID: model.model, providerID: model.provider } : undefined)}
+        onSubmit={(text) => void sendMessage(text)}
         onCancel={() => void cancelGeneration()}
         generating={generating}
         disabled={!activeSessionId || sseStatus === 'error'}

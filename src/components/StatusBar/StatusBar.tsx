@@ -31,7 +31,6 @@ export const StatusBar = memo(function StatusBar() {
         clearTimeout(timerRef.current);
         timerRef.current = null;
       }
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDebouncedSseError(false);
     }
     return () => {

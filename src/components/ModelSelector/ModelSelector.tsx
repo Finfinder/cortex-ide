@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AVAILABLE_MODELS, type ModelConfig } from '@/lib/opencode/config';
+import { AVAILABLE_MODELS, DEFAULT_MODEL, type ModelConfig } from '@/lib/opencode/config';
 import styles from './ModelSelector.module.css';
 
 export interface ModelSelectorProps {
@@ -35,10 +35,12 @@ export function ModelSelector({ value, onChange, position = 'bottom' }: Readonly
     // Ensure current value is in the list (handles session model changes)
     const hasValue = modelsMap.get(value.provider)?.some(m => m.model === value.model && m.provider === value.provider);
     if (!hasValue) {
+      // Merge value with DEFAULT_MODEL to ensure all required properties are present
+      const enrichedModel = { ...DEFAULT_MODEL, ...value };
       if (!modelsMap.has(value.provider)) {
         modelsMap.set(value.provider, []);
       }
-      modelsMap.get(value.provider)?.push(value);
+      modelsMap.get(value.provider)?.push(enrichedModel);
     }
 
     return Array.from(modelsMap.entries()).map(([provider, models]) => ({

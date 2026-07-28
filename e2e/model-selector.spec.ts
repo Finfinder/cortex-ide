@@ -14,9 +14,13 @@ test.describe("Model Selector", () => {
 
     await page.goto("/");
 
-    // Click the model selector trigger
+    // Wait for model selector to be ready (models may need to load)
     const modelTrigger = page.getByRole("button", { name: /Select model/ });
     await expect(modelTrigger).toBeVisible();
+    await expect(modelTrigger).toBeEnabled();
+    // Wait for at least one model to be available in the dropdown before clicking
+    await page.waitForTimeout(500); // Allow time for models to load
+
     await modelTrigger.click();
 
     // Check dropdown is open
@@ -48,9 +52,12 @@ test.describe("Model Selector", () => {
     await page.goto("/");
 
     const modelTrigger = page.getByRole("button", { name: /Select model/ });
+    await expect(modelTrigger).toBeEnabled();
+    await page.waitForTimeout(500); // Allow time for models to load
     await modelTrigger.click();
 
     const dropdown = page.getByRole("listbox", { name: "Models" });
+    await expect(dropdown).toBeVisible();
     const searchInput = dropdown.getByPlaceholder("Search models...");
 
     // Search for "big"
@@ -73,9 +80,12 @@ test.describe("Model Selector", () => {
     await page.goto("/");
 
     const modelTrigger = page.getByRole("button", { name: /Select model/ });
+    await expect(modelTrigger).toBeEnabled();
+    await page.waitForTimeout(500); // Allow time for models to load
     await modelTrigger.click();
 
     const dropdown = page.getByRole("listbox", { name: "Models" });
+    await expect(dropdown).toBeVisible();
     const deepseekOption = dropdown.getByRole("option", { name: "opencode/deepseek-v4-flash-free" });
     await deepseekOption.click();
 
@@ -94,8 +104,12 @@ test.describe("Model Selector", () => {
 
     await page.goto("/");
 
-    // Get initial model (should be default for software-engineer agent)
+    // Wait for model selector to be ready
     const modelTrigger = page.getByRole("button", { name: /Select model/ });
+    await expect(modelTrigger).toBeEnabled();
+    await page.waitForTimeout(500); // Allow time for models to load
+
+    // Get initial model (should be default for software-engineer agent)
     const initialModel = await modelTrigger.textContent();
 
     // Open agent selector
@@ -129,10 +143,15 @@ test.describe("Model Selector", () => {
 
     await page.goto("/");
 
+    // Wait for model selector to be ready
     const modelTrigger = page.getByRole("button", { name: /Select model/ });
+    await expect(modelTrigger).toBeEnabled();
+    await page.waitForTimeout(500); // Allow time for models to load
+
     await modelTrigger.click();
 
     const dropdown = page.getByRole("listbox", { name: "Models" });
+    await expect(dropdown).toBeVisible();
     await dropdown.getByRole("option", { name: "opencode/nemotron-3-ultra-free" }).click();
 
     await expect(modelTrigger).toContainText("opencode/nemotron-3-ultra-free");

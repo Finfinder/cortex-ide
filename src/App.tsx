@@ -23,20 +23,29 @@ function AgentWorkspace() {
   const activeSession = state.sessions.find((s) => s.id === state.activeSessionId);
   const activeModel = sessionModelToConfig(activeSession?.model);
 
-  // Update model when session changes
-  // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/set-state-in-effect
-  useEffect(() => {
-    if (activeModel) {
-      setModel(activeModel);
-    }
-  }, [activeModel]);
+  // Use activeModel as fallback if model hasn't been explicitly set
+  const effectiveModel = model ?? activeModel;
 
-  // Handle agent change with model sync
+  // Handle agent change with model sync — creates a new session with the agent's model
   const handleAgentChange = (agentName: string, agentModel?: ModelConfig) => {
     setAgent(agentName);
     if (agentModel) {
       setModel(agentModel);
+      // OpenCode does not support changing model mid-session; create a new one
+      const modelArg = agentModel.model.includes('/')
+        ? { id: agentModel.model.split('/')[1], providerID: agentModel.model.split('/')[0] }
+        : { id: agentModel.model, providerID: agentModel.provider };
+      void createSession(modelArg);
     }
+  };
+
+  // Handle model change — creates a new session with the selected model
+  const handleModelChange = (newModel: ModelConfig) => {
+    setModel(newModel);
+    const modelArg = newModel.model.includes('/')
+      ? { id: newModel.model.split('/')[1], providerID: newModel.model.split('/')[0] }
+      : { id: newModel.model, providerID: newModel.provider };
+    void createSession(modelArg);
   };
 
   // Global keyboard shortcuts (3.10)
@@ -44,7 +53,7 @@ function AgentWorkspace() {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") {
         e.preventDefault();
-        void createSession();
+        void createSession(effectiveModel ? { id: effectiveModel.model.split('/')[1] ?? effectiveModel.model, providerID: effectiveModel.model.split('/')[0] ?? effectiveModel.provider } : undefined);
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -57,7 +66,7 @@ function AgentWorkspace() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [createSession, cancelGeneration, state.generating]);
+  }, [createSession, cancelGeneration, state.generating, model, effectiveModel]);
 
   const handleEditExternal = (patch: PendingPatch) => {
     // Dynamic import so the plugin is only loaded inside Tauri (browser tests
@@ -97,7 +106,7 @@ function AgentWorkspace() {
               {theme === "dark" ? "☀" : "🌙"}
             </button>
           </div>
-          <SessionList />
+          <SessionList model={model} />
         </>
       }
     >
@@ -130,8 +139,8 @@ function AgentWorkspace() {
           <ChatPanel 
             agentName={agent} 
             onAgentChange={handleAgentChange} 
-            model={model} 
-            onModelChange={setModel} 
+            model={effectiveModel} 
+            onModelChange={handleModelChange} 
           />
           <PatchQueue onEditExternal={handleEditExternal} />
         </div>
@@ -168,7 +177,7 @@ function AgentWorkspace() {
                 fontSize: "13px",
               }}
               onClick={() => {
-                void createSession();
+                void createSession(model ? { id: model.model.split('/')[1] ?? model.model, providerID: model.model.split('/')[0] ?? model.provider } : undefined);
                 setPaletteOpen(false);
               }}
             >
