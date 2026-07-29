@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useAgent } from '@/lib/agent';
-import type { ModelConfig } from '@/lib/opencode/config';
+import { toSessionModel, type ModelConfig } from '@/lib/opencode/config';
 import styles from './SessionList.module.css';
 
 /**
@@ -25,9 +25,7 @@ export function SessionList({ model }: { model?: ModelConfig }) {
           type="button"
           className={styles.newButton}
           onClick={() => {
-            const modelArg = model
-              ? { id: model.model.split('/')[1] ?? model.model, providerID: model.model.split('/')[0] ?? model.provider }
-              : undefined;
+            const modelArg = model ? toSessionModel(model) : undefined;
             void createSession(modelArg);
           }}
           aria-label="New session (Ctrl+N)"

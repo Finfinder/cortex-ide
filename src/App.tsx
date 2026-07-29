@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { sessionModelToConfig, type ModelConfig } from '@/lib/opencode/config';
+import { sessionModelToConfig, toSessionModel, type ModelConfig } from '@/lib/opencode/config';
 import { Layout } from "@/components/Layout";
 import { useTheme } from "@/components/Theme";
 import { AgentProvider, useAgent } from "@/lib/agent";
@@ -9,6 +9,7 @@ import { ChatPanel } from "@/components/Chat";
 import { PatchQueue } from "@/components/PatchReview";
 import { StatusBar } from "@/components/StatusBar";
 import { ErrorBanner } from "@/components/ErrorBanner";
+import { SettingsDialog } from "@/components/Settings/SettingsDialog";
 
 const OPENCODE_BASE_URL = "http://127.0.0.1:4096";
 const DEFAULT_AGENT = "software-engineer";
@@ -19,6 +20,7 @@ function AgentWorkspace() {
   const [agent, setAgent] = useState(DEFAULT_AGENT);
   const [model, setModel] = useState<ModelConfig | undefined>(undefined);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const activeSession = state.sessions.find((s) => s.id === state.activeSessionId);
   const activeModel = sessionModelToConfig(activeSession?.model);
@@ -32,20 +34,14 @@ function AgentWorkspace() {
     if (agentModel) {
       setModel(agentModel);
       // OpenCode does not support changing model mid-session; create a new one
-      const modelArg = agentModel.model.includes('/')
-        ? { id: agentModel.model.split('/')[1], providerID: agentModel.model.split('/')[0] }
-        : { id: agentModel.model, providerID: agentModel.provider };
-      void createSession(modelArg);
+      void createSession(toSessionModel(agentModel));
     }
   };
 
   // Handle model change — creates a new session with the selected model
   const handleModelChange = (newModel: ModelConfig) => {
     setModel(newModel);
-    const modelArg = newModel.model.includes('/')
-      ? { id: newModel.model.split('/')[1], providerID: newModel.model.split('/')[0] }
-      : { id: newModel.model, providerID: newModel.provider };
-    void createSession(modelArg);
+    void createSession(toSessionModel(newModel));
   };
 
   // Global keyboard shortcuts (3.10)
@@ -53,13 +49,14 @@ function AgentWorkspace() {
     const onKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") {
         e.preventDefault();
-        void createSession(effectiveModel ? { id: effectiveModel.model.split('/')[1] ?? effectiveModel.model, providerID: effectiveModel.model.split('/')[0] ?? effectiveModel.provider } : undefined);
+        void createSession(effectiveModel ? toSessionModel(effectiveModel) : undefined);
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setPaletteOpen((v) => !v);
       }
       if (e.key === "Escape") {
+        setSettingsOpen(false);
         setPaletteOpen(false);
         if (state.generating) void cancelGeneration();
       }
@@ -131,16 +128,37 @@ function AgentWorkspace() {
           <span style={{ fontSize: "13px", fontWeight: 600 }}>
             {activeSession?.title ?? "Chat"}
           </span>
+          <button
+            onClick={() => setSettingsOpen((v) => !v)}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--border-color)',
+              borderRadius: '6px',
+              color: 'var(--text-secondary)',
+              fontSize: '16px',
+              width: '32px',
+              height: '32px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+            aria-label="Ustawienia"
+            title="Ustawienia"
+          >
+            ⚙
+          </button>
         </header>
 
         <ErrorBanner />
 
         <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-          <ChatPanel 
-            agentName={agent} 
-            onAgentChange={handleAgentChange} 
-            model={effectiveModel} 
-            onModelChange={handleModelChange} 
+          <ChatPanel
+            agentName={agent}
+            onAgentChange={handleAgentChange}
+            model={effectiveModel}
+            onModelChange={handleModelChange}
+            onOpenSettings={() => setSettingsOpen(true)}
           />
           <PatchQueue onEditExternal={handleEditExternal} />
         </div>
@@ -177,7 +195,7 @@ function AgentWorkspace() {
                 fontSize: "13px",
               }}
               onClick={() => {
-                void createSession(model ? { id: model.model.split('/')[1] ?? model.model, providerID: model.model.split('/')[0] ?? model.provider } : undefined);
+                void createSession(model ? toSessionModel(model) : undefined);
                 setPaletteOpen(false);
               }}
             >
@@ -185,6 +203,8 @@ function AgentWorkspace() {
             </button>
           </dialog>
         )}
+
+        <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       </div>
     </Layout>
   );

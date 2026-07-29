@@ -2,13 +2,19 @@
 [data-theme="dark"] {
   --bg-primary: #1e1e2e;
   --bg-secondary: #181825;
+  --bg-tertiary: #242437;
   --sidebar-bg: #11111b;
   --text-primary: #cdd6f4;
   --text-secondary: #a6adc8;
+  --text-tertiary: #bac2de;
   --text-muted: #6c7086;
   --border-color: #313244;
   --accent: #89b4fa;
+  --accent-primary: #89b4fa;
   --accent-hover: #74c7ec;
+  --accent-warning: #f9e2af;
+  --accent-error: #f38ba8;
+  --accent-success: #a6e3a1;
   --diff-add-bg: rgba(166, 227, 161, 0.15);
   --diff-add-fg: #a6e3a1;
   --diff-remove-bg: rgba(243, 139, 168, 0.15);
@@ -20,13 +26,19 @@
 [data-theme="light"] {
   --bg-primary: #eff1f5;
   --bg-secondary: #e6e9ef;
+  --bg-tertiary: #dce0e8;
   --sidebar-bg: #dce0e8;
   --text-primary: #4c4f69;
   --text-secondary: #5c5f77;
+  --text-tertiary: #6c6f85;
   --text-muted: #9ca0b0;
   --border-color: #ccd0da;
   --accent: #1e66f5;
+  --accent-primary: #1e66f5;
   --accent-hover: #2a6ef5;
+  --accent-warning: #df8e1d;
+  --accent-error: #d20f39;
+  --accent-success: #40a02b;
   --diff-add-bg: rgba(64, 160, 43, 0.15);
   --diff-add-fg: #40a02b;
   --diff-remove-bg: rgba(210, 15, 57, 0.15);
@@ -75,3 +87,39 @@ code,
 pre {
   font-family: var(--font-mono);
 }
+
+select {
+  font-family: inherit;
+  font-size: 0.875rem;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 32px 8px 12px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a6adc8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+select:hover {
+  border-color: var(--accent-primary);
+}
+
+select:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(137, 180, 250, 0.25);
+}
+
+select option {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 8px 12px;
+}
+

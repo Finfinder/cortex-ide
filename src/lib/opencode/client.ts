@@ -9,6 +9,7 @@ import type {
   ChatMessage,
   MessageListResponse,
 } from './types';
+import { validateUrl } from '../utils/urlValidator';
 
 /** Configuration for the OpenCode HTTP client. */
 export interface ClientConfig {
@@ -49,12 +50,13 @@ export class OpencodeClient {
   private readonly signal?: AbortSignal;
 
   constructor(config: ClientConfig) {
-    // Normalize base URL (remove trailing slash)
+    // Normalize and validate base URL against SSRF (SEC-H1)
     let base = config.baseUrl;
     while (base.endsWith('/')) {
       base = base.slice(0, -1);
     }
-    this.baseUrl = base;
+    const validated = validateUrl(base);
+    this.baseUrl = validated.endsWith('/') ? validated.slice(0, -1) : validated;
     this.timeout = config.timeout ?? 30_000;
     this.signal = config.signal;
   }
@@ -76,27 +78,27 @@ export class OpencodeClient {
 
   /** Get a specific session by ID. */
   async getSession(id: string): Promise<Session> {
-    return this.get<Session>(`/session/${id}`);
+    return this.get<Session>(`/session/${encodeURIComponent(id)}`);
   }
 
   /** Delete a session. Returns true on success. */
   async deleteSession(id: string): Promise<boolean> {
-    return this.delete<boolean>(`/session/${id}`);
+    return this.delete<boolean>(`/session/${encodeURIComponent(id)}`);
   }
 
   /** Abort an ongoing operation in a session. Returns true on success. */
   async abortSession(id: string): Promise<boolean> {
-    return this.post<boolean>(`/session/${id}/abort`);
+    return this.post<boolean>(`/session/${encodeURIComponent(id)}/abort`);
   }
 
   /** Get messages for a session. */
   async getMessages(id: string): Promise<MessageListResponse> {
-    return this.get<MessageListResponse>(`/session/${id}/message`);
+    return this.get<MessageListResponse>(`/session/${encodeURIComponent(id)}/message`);
   }
 
   /** Send a chat message to a session. */
   async chat(id: string, message: ChatMessage): Promise<ChatResponse> {
-    return this.post<ChatResponse>(`/session/${id}/message`, message);
+    return this.post<ChatResponse>(`/session/${encodeURIComponent(id)}/message`, message);
   }
 
   // ─── Health ─────────────────────────────────────────────────────────────
@@ -104,7 +106,8 @@ export class OpencodeClient {
   /** Check server health. The /health endpoint returns HTML, so we just check if the server responds. */
   async health(): Promise<{ ok: boolean }> {
     try {
-      const response = await fetch(`${this.baseUrl}/health`, {
+      const url = validateUrl(`${this.baseUrl}/health`);
+      const response = await fetch(url, {
         signal: this.signal,
       });
       return { ok: response.ok };
@@ -117,7 +120,7 @@ export class OpencodeClient {
 
   /** Get the URL for the SSE event stream. */
   getEventStreamUrl(): string {
-    return `${this.baseUrl}/event`;
+    return validateUrl(`${this.baseUrl}/event`);
   }
 
   // ─── Internal HTTP Methods ──────────────────────────────────────────────
@@ -127,7 +130,7 @@ export class OpencodeClient {
     path: string,
     body?: unknown,
   ): Promise<T> {
-    const url = `${this.baseUrl}${path}`;
+    const url = validateUrl(`${this.baseUrl}${path}`);
     if (process.env.NODE_ENV === 'development') {
       console.log(`[OpencodeClient] ${method} ${url}`, body ? JSON.stringify(body) : '');
     }
@@ -154,9 +157,10 @@ export class OpencodeClient {
 
       if (!response.ok) {
         const text = await response.text().catch(() => '');
-        console.error(`[OpencodeClient] ${method} ${path} failed:`, response.status, response.statusText);
+        console.error(`[OpencodeClient] ${method} ${path} failed:`, response.status, response.statusText, text);
+        const detail = text ? `: ${text}` : '';
         throw new OpencodeClientError(
-          `OpenCode API error: ${response.status} ${response.statusText}`,
+          `OpenCode API error: ${response.status} ${response.statusText}${detail}`,
           response.status,
           text,
         );

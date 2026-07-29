@@ -24,6 +24,7 @@ export interface ChatInputProps {
   onAgentChange?: (agentName: string, model?: ModelConfig) => void;
   model?: ModelConfig;
   onModelChange?: (model: ModelConfig) => void;
+  onOpenSettings?: () => void;
 }
 
 /**
@@ -32,7 +33,7 @@ export interface ChatInputProps {
  */
 export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
   function ChatInput(
-    { onSubmit, onCancel, generating, disabled, agentName, onAgentChange, model, onModelChange },
+    { onSubmit, onCancel, generating, disabled, agentName, onAgentChange, model, onModelChange, onOpenSettings },
     ref,
   ) {
     const [value, setValue] = useState('');
@@ -112,7 +113,7 @@ export const ChatInput = forwardRef<ChatInputHandle, ChatInputProps>(
                 <AgentSelector value={agentName} onChange={(name, model) => onAgentChange(name, model)} position="top" />
               )}
               {model && onModelChange && (
-                <ModelSelector key={model.model} value={model} onChange={onModelChange} position="top" />
+                <ModelSelector key={model.model} value={model} onChange={onModelChange} position="top" onOpenSettings={onOpenSettings} />
               )}
             </div>
             {generating ? (

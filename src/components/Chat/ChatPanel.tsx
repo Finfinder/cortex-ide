@@ -10,13 +10,14 @@ export interface ChatPanelProps {
   onAgentChange?: (agentName: string, model?: ModelConfig) => void;
   model?: ModelConfig;
   onModelChange?: (model: ModelConfig) => void;
+  onOpenSettings?: () => void;
 }
 
 /**
  * Main chat panel: scrollable message log with streaming, plus the input box.
  * Mirrors the VS Code chat layout.
  */
-export function ChatPanel({ agentName, onAgentChange, model, onModelChange }: ChatPanelProps) {
+export function ChatPanel({ agentName, onAgentChange, model, onModelChange, onOpenSettings }: Readonly<ChatPanelProps>) {
   const { state, sendMessage, cancelGeneration } = useAgent();
   const { activeSessionId, messages, generating, sseStatus } = state;
   const sessionMessages = useMemo(
@@ -71,6 +72,7 @@ export function ChatPanel({ agentName, onAgentChange, model, onModelChange }: Ch
         onAgentChange={onAgentChange}
         model={model}
         onModelChange={onModelChange}
+        onOpenSettings={onOpenSettings}
       />
     </section>
   );
