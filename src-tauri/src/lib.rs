@@ -27,26 +27,64 @@ fn init_logging() {
         .init();
 }
 
+struct AppState {
+    spawn_manager: Arc<SpawnManager>,
+}
+
+#[tauri::command]
+async fn save_opencode_config(state: tauri::State<'_, AppState>, content: String) -> Result<(), String> {
+    let config_dir = dirs::config_dir()
+        .ok_or_else(|| "Failed to locate user config directory".to_string())?
+        .join("opencode");
+
+    std::fs::create_dir_all(&config_dir)
+        .map_err(|e| format!("Failed to create config directory: {}", e))?;
+
+    let file_path = config_dir.join("opencode.jsonc");
+    std::fs::write(&file_path, content)
+        .map_err(|e| format!("Failed to write opencode config: {}", e))?;
+
+    let config = SpawnConfig {
+        cwd: PathBuf::from("."),
+        port: 4096,
+        hostname: "127.0.0.1".to_string(),
+        cors: vec![],
+        custom_binary_path: None,
+        mdns: false,
+    };
+
+    if let Err(e) = state.spawn_manager.spawn(config).await {
+        error!("Failed to restart OpenCode server after config save: {}", e);
+    } else {
+        info!("OpenCode server restarted successfully with new config");
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     init_logging();
     info!("Cortex IDE starting up");
 
+    let manager = Arc::new(SpawnManager::new());
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .setup(|app| {
+        .manage(AppState {
+            spawn_manager: manager.clone(),
+        })
+        .invoke_handler(tauri::generate_handler![save_opencode_config])
+        .setup(move |app| {
             info!("Tauri backend setup started");
 
             let app_handle = app.handle().clone();
+            let manager_clone = manager.clone();
 
             tauri::async_runtime::spawn(async move {
-                // Give the webview time to load and register event listeners
-                // before emitting the ready event. The frontend does a dynamic
-                // import of @tauri-apps/api/event which can take a moment.
                 tokio::time::sleep(Duration::from_secs(1)).await;
 
                 info!("Spawning OpenCode server on port 4096");
-                let manager = Arc::new(SpawnManager::new());
 
                 let config = SpawnConfig {
                     cwd: PathBuf::from("."),
@@ -57,7 +95,7 @@ pub fn run() {
                     mdns: false,
                 };
 
-                match manager.spawn(config).await {
+                match manager_clone.spawn(config).await {
                     Ok(handle) => {
                         info!(
                             pid = ?handle.pid,
@@ -79,9 +117,6 @@ pub fn run() {
                             match status {
                                 HealthStatus::Healthy => {
                                     info!("OpenCode is healthy");
-                                    // Emit ready ONLY after OpenCode is confirmed healthy,
-                                    // so the frontend doesn't try to connect SSE before
-                                    // the server is actually listening.
                                     let _ = app_handle.emit("backend://ready", ());
                                     info!("Emitted backend://ready");
                                     return;

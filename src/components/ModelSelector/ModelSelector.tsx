@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
-import { AVAILABLE_MODELS, DEFAULT_MODEL, type ModelConfig } from '@/lib/opencode/config';
+import { useMemo, useState, useEffect } from 'react';
+import { DEFAULT_MODEL, type ModelConfig } from '@/lib/opencode/config';
+import { DEFAULT_SETTINGS, loadSettings, type LlmProviderConfig } from '@/lib/settings';
 import styles from './ModelSelector.module.css';
 
 export interface ModelSelectorProps {
@@ -7,6 +8,7 @@ export interface ModelSelectorProps {
   onChange: (model: ModelConfig) => void;
   /** Dropdown opens upward (for bottom-of-screen placement). Default: downward. */
   position?: 'top' | 'bottom';
+  onOpenSettings?: () => void;
 }
 
 /**
@@ -15,39 +17,65 @@ export interface ModelSelectorProps {
 export function ModelSelector({ value, onChange, position = 'bottom' }: Readonly<ModelSelectorProps>) {
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
+  const [customProviders, setCustomProviders] = useState<LlmProviderConfig[]>(
+    DEFAULT_SETTINGS.llmProviders.providers,
+  );
 
-  // Get all available models from config
+  // Load configured providers from settings
+  useEffect(() => {
+    loadSettings()
+      .then((s) => {
+        if (s.llmProviders?.providers) {
+          setCustomProviders(s.llmProviders.providers);
+        }
+      })
+      .catch(() => {});
+  }, [open]);
+
+  // Combine user configured models from settings
   const allModels = useMemo(() => {
-    const modelsMap = new Map<string, ModelConfig[]>(); // provider -> models
+    const modelsMap = new Map<string, ModelConfig[]>(); // provider group -> models
 
-    // Add all available models from config
-    AVAILABLE_MODELS.forEach(model => {
-      if (!modelsMap.has(model.provider)) {
-        modelsMap.set(model.provider, []);
+    // 1. Add models from configured providers in settings
+    customProviders.forEach(prov => {
+      if (prov.enabled === false) return;
+      const groupKey = prov.name || prov.provider || prov.id;
+      if (!modelsMap.has(groupKey)) {
+        modelsMap.set(groupKey, []);
       }
-      // Avoid duplicates
-      const exists = modelsMap.get(model.provider)?.some(m => m.model === model.model && m.provider === model.provider);
-      if (!exists) {
-        modelsMap.get(model.provider)?.push(model);
-      }
+      (prov.models || []).forEach(m => {
+        if (m.enabled === false) return;
+        const exists = modelsMap.get(groupKey)?.some(existing => existing.model === m.id);
+        if (!exists) {
+          modelsMap.get(groupKey)?.push({
+            model: m.id,
+            provider: prov.provider || prov.id,
+            maxTokens: 8192,
+            temperature: 0.7,
+          });
+        }
+      });
     });
 
-    // Ensure current value is in the list (handles session model changes)
-    const hasValue = modelsMap.get(value.provider)?.some(m => m.model === value.model && m.provider === value.provider);
-    if (!hasValue) {
-      // Merge value with DEFAULT_MODEL to ensure all required properties are present
+    // 2. Ensure current selected value is in the list
+    const hasValue = Array.from(modelsMap.values()).some(models =>
+      models.some(m => m.model === value.model)
+    );
+    if (!hasValue && value.model) {
       const enrichedModel = { ...DEFAULT_MODEL, ...value };
-      if (!modelsMap.has(value.provider)) {
-        modelsMap.set(value.provider, []);
+      const matchingProv = customProviders.find(p => p.id === value.provider || p.provider === value.provider);
+      const groupKey = matchingProv?.name || value.provider || 'OpenCode';
+      if (!modelsMap.has(groupKey)) {
+        modelsMap.set(groupKey, []);
       }
-      modelsMap.get(value.provider)?.push(enrichedModel);
+      modelsMap.get(groupKey)?.push(enrichedModel);
     }
 
     return Array.from(modelsMap.entries()).map(([provider, models]) => ({
       provider,
       models,
     }));
-  }, [value]);
+  }, [value, customProviders]);
 
   // Filter models by query
   const filteredModels = useMemo(() => {
@@ -57,7 +85,7 @@ export function ModelSelector({ value, onChange, position = 'bottom' }: Readonly
       ...group,
       models: group.models.filter(m => 
         m.model.toLowerCase().includes(q) || 
-        (m.provider && m.provider.toLowerCase().includes(q))
+        m.provider?.toLowerCase().includes(q)
       )
     })).filter(group => group.models.length > 0);
   }, [allModels, query]);
@@ -70,7 +98,7 @@ export function ModelSelector({ value, onChange, position = 'bottom' }: Readonly
         type="button"
         className={styles.trigger}
         onClick={() => setOpen((v) => !v)}
-        aria-haspopup="listbox"
+        aria-haspopup="true"
         aria-expanded={open}
         aria-label="Select model"
       >
@@ -91,30 +119,32 @@ export function ModelSelector({ value, onChange, position = 'bottom' }: Readonly
           {filteredModels.length === 0 ? (
             <div className={styles.empty}>No models found.</div>
           ) : (
-            filteredModels.map((group) => (
-              <div key={group.provider} className={styles.group}>
-                <div className={styles.groupHeader}>{group.provider}</div>
-                <ul className={styles.list}>
-                  {group.models.map((model) => (
-                    <li key={`${model.provider}::${model.model}`}>
-                      <button
-                        type="button"
-                        role="option"
-                        aria-selected={model.model === value.model && model.provider === value.provider}
-                        className={`${styles.option} ${model.model === value.model && model.provider === value.provider ? styles.selected : ''}`}
-                        onClick={() => {
-                          onChange(model);
-                          setOpen(false);
-                        }}
-                      >
-                        <span className={styles.optionName}>{model.model}</span>
-                        <span className={styles.optionProvider}>{model.provider}</span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))
+            <div className={styles.scrollContainer}>
+              {filteredModels.map((group) => (
+                <div key={group.provider} className={styles.group}>
+                  <div className={styles.groupHeader}>{group.provider}</div>
+                  <ul className={styles.list}>
+                    {group.models.map((model) => (
+                      <li key={`${model.provider}::${model.model}`}>
+                        <button
+                          type="button"
+                          role="option"
+                          aria-selected={model.model === value.model && model.provider === value.provider}
+                          className={`${styles.option} ${model.model === value.model && model.provider === value.provider ? styles.selected : ''}`}
+                          onClick={() => {
+                            onChange(model);
+                            setOpen(false);
+                          }}
+                        >
+                          <span className={styles.optionName}>{model.model}</span>
+                          <span className={styles.optionProvider}>{model.provider}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}

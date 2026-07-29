@@ -3,6 +3,7 @@
 // Uses fetch + ReadableStream for cross-platform compatibility (no EventSource in Tauri WebView).
 
 import type { OpencodeEvent, EventType } from './types';
+import { validateUrl } from '../utils/urlValidator';
 
 /** Callback for SSE events. */
 export type EventCallback = (event: OpencodeEvent) => void;
@@ -127,7 +128,8 @@ export class OpencodeEventStream {
       : this.abortController.signal;
 
     try {
-      const response = await fetch(this.config.url, {
+      const url = validateUrl(this.config.url);
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           Accept: 'text/event-stream',

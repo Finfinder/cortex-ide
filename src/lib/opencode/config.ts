@@ -330,16 +330,7 @@ export const PREDEFINED_AGENTS: AgentConfig[] = [
   },
 ];
 
-/** All available models from opencode-config.json */
-export const AVAILABLE_MODELS: ModelConfig[] = [
-  { model: 'opencode/big-pickle', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
-  { model: 'opencode/deepseek-v4-flash-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
-  { model: 'opencode/laguna-s-2.1-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
-  { model: 'opencode/ling-3.0-flash-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
-  { model: 'opencode/mimo-v2.5-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
-  { model: 'opencode/nemotron-3-ultra-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
-  { model: 'opencode/north-mini-code-free', provider: 'opencode', smallModel: 'opencode/north-mini-code-free', smallModelProvider: 'opencode', maxTokens: 8192, temperature: 0.7 },
-];
+
 
 /**
  * Get the effective model config for an agent, falling back to global defaults.
@@ -364,16 +355,30 @@ export function sessionModelToConfig(sessionModel: Session['model']): ModelConfi
   if (!sessionModel) {
     return DEFAULT_MODEL;
   }
+  const provider = sessionModel.providerID || 'opencode';
+  const modelId = sessionModel.id.startsWith(`${provider}/`) ? sessionModel.id : `${provider}/${sessionModel.id}`;
   return {
-    // Use "provider/id" format (matching DEFAULT_MODEL) so split('/') logic
-    // in App.tsx/SessionList.tsx produces correct id and providerID.
-    model: `${sessionModel.providerID}/${sessionModel.id}`,
-    provider: sessionModel.providerID,
+    model: modelId,
+    provider,
     smallModel: DEFAULT_MODEL.smallModel,
     smallModelProvider: DEFAULT_MODEL.smallModelProvider,
     maxTokens: DEFAULT_MODEL.maxTokens,
     temperature: DEFAULT_MODEL.temperature,
   };
+}
+
+/**
+ * Convert a ModelConfig to a session model object expected by the OpenCode API.
+ */
+export function toSessionModel(model: ModelConfig): { id: string; providerID: string } {
+  const providerID = model.provider || 'opencode';
+  let id = model.model;
+
+  if (id.startsWith(`${providerID}/`)) {
+    id = id.slice(providerID.length + 1);
+  }
+
+  return { id, providerID };
 }
 
 /**
