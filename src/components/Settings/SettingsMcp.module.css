@@ -1,0 +1,556 @@
+/* ─── SettingsMcp Styles ──────────────────────────────────────────────────── */
+
+.container {
+  padding: 24px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--text-primary);
+}
+
+.description {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  margin: 0 0 24px;
+}
+
+/* ─── Add Panel ─────────────────────────────────────────────────────────────── */
+
+.addPanel {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  margin-bottom: 24px;
+}
+
+/* Mode Toggle */
+.modeToggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.modeBtn {
+  padding: 6px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.modeBtn:hover {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.modeBtnActive {
+  border-color: var(--accent-primary);
+  background: var(--accent-primary);
+  color: white;
+}
+
+/* Form layout */
+.manualForm,
+.jsonForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.formRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.formRow .fieldLabel {
+  flex: 1;
+  min-width: 160px;
+}
+
+/* Type select */
+.typeSelect {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.typeSelect:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+/* Options row (auto-start + add button) */
+.optionsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* JSON mode */
+.jsonHint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin: 0 0 8px;
+}
+
+.jsonExample {
+  font-size: 0.75rem;
+  font-family: 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text-secondary);
+  margin: 0 0 10px;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.jsonTextarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-family: 'Fira Code', 'Cascadia Code', 'Courier New', monospace;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.jsonTextarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.jsonTextareaError {
+  border-color: var(--accent-error);
+}
+
+.jsonError {
+  font-size: 0.8rem;
+  color: var(--accent-error);
+}
+
+.jsonActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Badges */
+.typeBadge,
+.versionBadge {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-weight: 600;
+}
+
+.typeBadge {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.versionBadge {
+  background: var(--bg-tertiary);
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-color);
+}
+
+
+/* ─── Servers List ─────────────────────────────────────────────────────────── */
+
+.serversList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* ─── Server Card ──────────────────────────────────────────────────────────── */
+
+.serverCard {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  transition: border-color 0.2s;
+}
+
+.serverCard:hover {
+  border-color: var(--accent-primary);
+}
+
+.serverCard.disabled {
+  opacity: 0.6;
+}
+
+.serverHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.serverName {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.serverIcon {
+  font-size: 1.25rem;
+}
+
+.serverTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.serverActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.statusIndicator {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  min-width: 100px;
+  text-align: center;
+}
+
+.checking {
+  color: var(--accent-warning);
+  animation: pulse 1.5s infinite;
+}
+
+.connected {
+  color: var(--accent-success);
+  background: rgba(34, 197, 94, 0.15);
+}
+
+.error {
+  color: var(--accent-error);
+  background: rgba(239, 68, 68, 0.15);
+}
+
+.notTested {
+  color: var(--text-tertiary);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ─── Toggles & Buttons ────────────────────────────────────────────────────── */
+
+.toggleLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.toggleLabel input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.testButton,
+.editButton,
+.cancelButton,
+.removeButton {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.testButton {
+  border: 1px solid var(--accent-primary);
+  background: transparent;
+  color: var(--accent-primary);
+}
+
+.testButton:hover:not(:disabled) {
+  background: var(--accent-primary);
+  color: white;
+}
+
+.testButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.editButton {
+  border: 1px solid var(--accent-warning);
+  background: transparent;
+  color: var(--accent-warning);
+}
+
+.editButton:hover {
+  background: var(--accent-warning);
+  color: white;
+}
+
+.cancelButton {
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.cancelButton:hover {
+  background: var(--bg-tertiary);
+}
+
+.removeButton {
+  border: 1px solid var(--accent-error);
+  background: transparent;
+  color: var(--accent-error);
+}
+
+.removeButton:hover {
+  background: var(--accent-error);
+  color: white;
+}
+
+/* ─── Edit Form ────────────────────────────────────────────────────────────── */
+
+.editForm {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fieldLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.nameInput,
+.commandInput,
+.argsInput {
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.nameInput:focus,
+.commandInput:focus,
+.argsInput:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.addButton {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent-primary);
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+}
+
+.addButton:hover {
+  opacity: 0.9;
+}
+
+.addButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+
+/* ─── Env Section ──────────────────────────────────────────────────────────── */
+
+.envSection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.envHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.addEnvButton {
+  padding: 4px 10px;
+  border: 1px dashed var(--accent-primary);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent-primary);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.addEnvButton:hover {
+  background: var(--accent-primary);
+  color: white;
+  border-style: solid;
+}
+
+.envRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.envKeyInput,
+.envValueInput {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+}
+
+.envKeyInput:focus,
+.envValueInput:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.removeEnvButton {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--accent-error);
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.removeEnvButton:hover:not(:disabled) {
+  background: var(--accent-error);
+  color: white;
+}
+
+.removeEnvButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ─── Server Details ───────────────────────────────────────────────────────── */
+
+.serverDetails {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.detailItem {
+  display: flex;
+  gap: 4px;
+}
+
+.detailItem strong {
+  color: var(--text-primary);
+}
+
+/* ─── Empty State ──────────────────────────────────────────────────────────── */
+
+.emptyState {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text-tertiary);
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.emptyState p {
+  margin: 0 0 8px;
+}
+
+.emptyHint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* ─── Save Section ─────────────────────────────────────────────────────────── */
+
+.saveSection {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.saveButton {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent-primary);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.saveButton:hover {
+  opacity: 0.9;
+}

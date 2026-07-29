@@ -34,7 +34,7 @@ export function AgentSelector({ value, onChange, position = 'bottom' }: Readonly
         type="button"
         className={styles.trigger}
         onClick={() => setOpen((v) => !v)}
-        aria-haspopup="listbox"
+        aria-haspopup="true"
         aria-expanded={open}
         aria-label="Select agent"
       >

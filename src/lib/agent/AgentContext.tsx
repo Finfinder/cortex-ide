@@ -23,6 +23,7 @@ import {
   type SseStatus,
 } from '@/lib/opencode';
 import { listen } from '@/lib/ipc';
+import { loadSettings, syncOpencodeConfig } from '@/lib/settings';
 import type { UiMessage, PendingPatch } from './types';
 
 // ─── Debug logging (browser console) ──────────────────────────────────────
@@ -556,13 +557,30 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
 
   const createSession = useCallback(async (model?: { id: string; providerID: string }) => {
     try {
+      if (model?.providerID && model.providerID !== 'opencode') {
+        const settings = await loadSettings();
+        const prov = settings.llmProviders?.providers?.find(
+          (p) => p.id === model.providerID || p.provider === model.providerID,
+        );
+        if (!prov?.apiKey) {
+          const provName = prov?.name || model.providerID;
+          throw new Error(
+            `Dostawca "${provName}" wymaga klucza API. Przejdź do Ustawień -> Dostawcy LLM i wprowadź klucz API.`,
+          );
+        }
+        await syncOpencodeConfig(settings.llmProviders.providers);
+      }
       const { id } = await clientRef.current.createSession(model);
       const session = await clientRef.current.getSession(id);
       dispatch({ type: 'session.created', session });
     } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Failed to create session';
+      const userMsg = msg.includes('ProviderModelNotFoundError') || msg.includes('Model not found')
+        ? 'Wybrany model nie został odnaleziony u dostawcy. Wybierz inny model w menu modeli (np. Gemini 2.5 Flash lub Claude Sonnet 4).'
+        : msg;
       dispatch({
         type: 'error',
-        error: e instanceof Error ? e.message : 'Failed to create session',
+        error: userMsg,
       });
     }
   }, []);
@@ -606,16 +624,12 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
     dispatch({ type: 'message.upsert', sessionId, message: userMessage });
 
     try {
-      // OpenCode 1.18.8 ignores modelID/providerID in message body;
-      // the model must be set on the session at creation time.
+      // OpenCode server handles the model and provider configured on the session,
+      // executing tool calls, file edits, compaction, and agents natively.
       const response = await clientRef.current.chat(sessionId, {
         parts: [{ type: 'text', text: text.trim() }],
       });
 
-      // Use the HTTP response as a fallback: only upsert the assistant message
-      // if SSE hasn't already delivered it. This prevents race conditions where
-      // the HTTP response (which may have empty parts initially) overwrites
-      // parts that SSE already streamed.
       const existing = (stateRef.current.messages[sessionId] ?? []).find(
         (m) => m.id === response.info.id,
       );
@@ -631,9 +645,13 @@ export function AgentProvider({ baseUrl, cwd = '.', children }: AgentProviderPro
       }
     } catch (e) {
       console.trace('[AgentContext] sendMessage error:', e);
+      const msg = e instanceof Error ? e.message : 'Failed to send message';
+      const userMsg = msg.includes('ProviderModelNotFoundError') || msg.includes('Model not found')
+        ? 'Wybrany model nie został odnaleziony u dostawcy. Wybierz inny model w menu modeli (np. Gemini 2.5 Flash lub Claude Sonnet 4).'
+        : msg;
       dispatch({
         type: 'error',
-        error: e instanceof Error ? e.message : 'Failed to send message',
+        error: userMsg,
       });
     }
   }, []);
