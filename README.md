@@ -69,7 +69,7 @@ Cortex IDE uses a **hybrid architecture**: OpenCode as the agent backend (via SD
 - **Node.js** 20+ and **npm** 9+
 - **Rust** toolchain (`rustc` 1.78+, `cargo`)
 - **Tauri CLI**: `npm install -g @tauri-apps/cli`
-- **OpenCode CLI**: `npm install -g @opencode-ai/opencode` (or let Cortex IDE auto-detect it on system PATH)
+- **OpenCode CLI**: `npm install -g opencode-ai` (or let Cortex IDE auto-detect it on system PATH)
 
 ### Installation
 
